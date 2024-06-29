@@ -12,17 +12,20 @@
  */
 
 import axios from 'axios'
-import { auth } from './auth'
+import { HawkConfig } from './types'
+import RequestService from './RequestService'
 
 export class HawkClient {
-    private response: HawkAuthResponse
+    constructor(private requestService: RequestService) {
+    }
 
-    private instance = (baseUrl: string, platform: 'utilityhawk' | 'aquahawk', authCookie: string) => axios.create({
-        baseURL: 'https://' + baseUrl + '.' + platform + '.us',
-    })
+    static create(config: HawkConfig) {
+        const instance = axios.create({
+            baseURL: 'https://' + config.districtName + '.' + config.platform + '.us',
+            withCredentials: true,
+        })
+        const requestService = new RequestService(config, instance)
 
-    constructor(username: string, password: string, districtName: string, platform: 'utilityhawk' | 'aquahawk') {
-        response = await auth(username, password)
-        instance(districtName, platform, authCookie)
+        return new HawkClient(requestService)
     }
 }

@@ -11,6 +11,8 @@
  * For a full copy of the license in its entirety, please visit <https://www.mozilla.org/en-US/MPL/2.0/>
  */
 
+import { HawkAuthResponse } from './types'
+
 /**
  * Authenticates the user with the provided username and password.
  *
@@ -19,10 +21,10 @@
  * @return {Promise<void>} A promise that resolves when the authentication is successful.
  */
 
-let sessionCookie: string;
+let sessionCookie: string
 
 export async function auth(username: string, password: string): Promise<HawkAuthResponse> {
     return new Promise((resolve, reject) => {
-        sessionCookie = ""
+
     })
 }

@@ -11,12 +11,12 @@
  * For a full copy of the license in its entirety, please visit <https://www.mozilla.org/en-US/MPL/2.0/>
  */
 
-type HawkAuthResponseBody = {
+export interface HawkAuthResponseBody {
     success: boolean,
     message: string,
     activeUser: {
-        "__v": number,
-        "_id": string,
+        '__v': number,
+        '_id': string,
         attributes: {
             accountIdArray: string[]
         },
@@ -31,9 +31,7 @@ type HawkAuthResponseBody = {
         setupTime: string,
         updatedTime: string,
         username: string,
-        contactPreference: {
-            [key: string]: boolean
-        },
+        contactPreference: Record<string, boolean>,
         mailingAddress: {
             address: string,
             city: string,
@@ -48,7 +46,20 @@ type HawkAuthResponseBody = {
     }
 }
 
-type HawkAuthResponse = {
+export interface HawkAuthResponse {
     sessionCookie: string,
     body: HawkAuthResponseBody
+}
+
+export interface HawkClientType {
+    createHttpClient(baseUrl: string, platform: 'utilityhawk' | 'aquahawk', authCookie: string): AxiosInstance;
+
+    getInstance(): AxiosInstance;
+}
+
+export interface HawkConfig {
+    username: string,
+    password: string,
+    districtName: string,
+    platform: 'utilityhawk' | 'aquahawk'
 }
