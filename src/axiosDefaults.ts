@@ -11,18 +11,19 @@
  * For a full copy of the license in its entirety, please visit <https://www.mozilla.org/en-US/MPL/2.0/>
  */
 
-import axios from 'axios'
-import { auth } from './auth'
+import axios, { AxiosInstance } from 'axios'
 
-export class HawkClient {
-    private response: HawkAuthResponse
+let instance: AxiosInstance;
 
-    private instance = (baseUrl: string, platform: 'utilityhawk' | 'aquahawk', authCookie: string) => axios.create({
+export function createInstance(baseUrl: string, platform: 'utilityhawk' | 'aquahawk', authCookie: string): AxiosInstance {
+    instance = axios.create({
         baseURL: 'https://' + baseUrl + '.' + platform + '.us',
+        withCredentials: true
     })
 
-    constructor(username: string, password: string, districtName: string, platform: 'utilityhawk' | 'aquahawk') {
-        response = await auth(username, password)
-        instance(districtName, platform, authCookie)
-    }
+    return instance;
+}
+
+export function getInstance() {
+    return instance
 }

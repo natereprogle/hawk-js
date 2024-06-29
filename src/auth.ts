@@ -11,18 +11,18 @@
  * For a full copy of the license in its entirety, please visit <https://www.mozilla.org/en-US/MPL/2.0/>
  */
 
-import axios from 'axios'
-import { auth } from './auth'
+/**
+ * Authenticates the user with the provided username and password.
+ *
+ * @param {string} username - The username of the user.
+ * @param {string} password - The password of the user.
+ * @return {Promise<void>} A promise that resolves when the authentication is successful.
+ */
 
-export class HawkClient {
-    private response: HawkAuthResponse
+let sessionCookie: string;
 
-    private instance = (baseUrl: string, platform: 'utilityhawk' | 'aquahawk', authCookie: string) => axios.create({
-        baseURL: 'https://' + baseUrl + '.' + platform + '.us',
+export async function auth(username: string, password: string): Promise<HawkAuthResponse> {
+    return new Promise((resolve, reject) => {
+        sessionCookie = ""
     })
-
-    constructor(username: string, password: string, districtName: string, platform: 'utilityhawk' | 'aquahawk') {
-        response = await auth(username, password)
-        instance(districtName, platform, authCookie)
-    }
 }
