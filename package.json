@@ -7,7 +7,7 @@
   "types": "dist/index.d.ts",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "build": "tsup src/index.ts --dts --format cjs,esm",
+    "build": "tsup src/hawkClient.ts --dts --format cjs,esm",
     "lint": "tsc"
   },
   "keywords": [],
@@ -15,7 +15,14 @@
   "license": "ISC",
   "devDependencies": {
     "@changesets/cli": "^2.27.6",
+    "@eslint/js": "^9.6.0",
+    "@stylistic/eslint-plugin": "^2.3.0",
+    "@stylistic/eslint-plugin-ts": "^2.3.0",
+    "@typescript-eslint/parser": "^7.14.1",
+    "eslint": "^9.6.0",
+    "globals": "^15.6.0",
     "tsup": "^8.1.0",
-    "typescript": "^5.5.2"
+    "typescript": "^5.5.2",
+    "typescript-eslint": "^7.14.1"
   }
 }
