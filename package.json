@@ -7,7 +7,7 @@
   "types": "dist/index.d.ts",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "build": "tsup src/hawkClient.ts --dts --format cjs,esm",
+    "build": "tsup src/client.ts --dts --format cjs,esm",
     "lint": "tsc"
   },
   "keywords": [],
