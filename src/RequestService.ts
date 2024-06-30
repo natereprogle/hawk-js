@@ -1,7 +1,6 @@
-import { HawkAuthResponse, TimeseriesMetrics, TimeseriesResults } from './types'
+import { HawkAuthResponse, TimeseriesMetrics, TimeseriesResults, HawkConfig } from './types'
 import { AxiosInstance, AxiosRequestConfig } from 'axios'
 import { auth, getAuthInfo, needsRefresh } from './auth'
-import { HawkConfig } from '../dist'
 
 class RequestService {
 
