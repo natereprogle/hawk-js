@@ -18,11 +18,15 @@ import stylisticTs from '@stylistic/eslint-plugin-ts'
 import tsParser from '@typescript-eslint/parser'
 
 export default [
+    pluginJs.configs.recommended,
+    ...tseslint.configs.recommendedTypeChecked,
+    ...tseslint.configs.stylisticTypeChecked,
+    ...tseslint.configs.strictTypeChecked,
     {
-        ignores: ['dist/*', 'eslint.config.mjs'],
+        ignores: ['dist/*', 'eslint.config.mjs', '**/*.d.ts', 'tsup.config.js', '**/*.js'],
     },
     {
-        files: ['**/*.{js,mjs,cjs,ts}'],
+        files: ['**/*.ts'],
         plugins: {
             '@stylistic/ts': stylisticTs,
         },
@@ -34,6 +38,8 @@ export default [
                 'allowTemplateLiterals': true,
                 'ignoreStringLiterals': true,
             }],
+            'no-unused-vars': 'off',
+            '@typescript-eslint/no-unused-vars': 'warn',
         },
     },
     {
@@ -46,12 +52,9 @@ export default [
             parserOptions: {
                 project: './tsconfig.json',
                 ecmaVersion: 'latest',
-                ecmaFeatures: { modules: true }
+                ecmaFeatures: { modules: true },
+
             },
         },
     },
-    pluginJs.configs.recommended,
-    ...tseslint.configs.recommendedTypeChecked,
-    ...tseslint.configs.stylisticTypeChecked,
-    ...tseslint.configs.strictTypeChecked,
 ]

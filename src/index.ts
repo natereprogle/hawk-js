@@ -12,8 +12,9 @@
  */
 
 import axios from 'axios'
-import { HawkConfig } from './types'
+
 import RequestService from './RequestService'
+import { HawkAuthResponse, HawkConfig, TimeseriesMetrics } from './types'
 
 export class HawkClient {
     constructor(private requestService: RequestService) {
@@ -27,5 +28,54 @@ export class HawkClient {
         const requestService = new RequestService(config, instance)
 
         return new HawkClient(requestService)
+    }
+
+    public getSessionInformation(): HawkAuthResponse {
+        return this.requestService.getSessionInformation()
+    }
+
+    public async queryTimeseriesData(accountNumber: string,
+        startTime: string,
+        endTime: string,
+        interval: '1 hour' | '1 day' | '1 month',
+        extraStartTime: boolean,
+        extraEndTime: boolean,
+        metrics: TimeseriesMetrics) {
+        return this.requestService.queryTimeseriesData(accountNumber, startTime, endTime, interval, extraStartTime, extraEndTime, metrics)
+    }
+
+    public async updateAccountAlertSettings() {
+
+    }
+
+    public async getAlertTypes() {
+
+    }
+
+    public async getAlerts() {
+
+    }
+
+    public async getAlertNotes() {
+    }
+
+    public async getAlertSeverities() {
+
+    }
+
+    public async getMeterByAccountID() {
+
+    }
+
+    public async getMeterByAccountNumber() {
+
+    }
+
+    public async updateMeterAlertSettings() {
+
+    }
+
+    public async updateMeterContinuousAlertSettings() {
+
     }
 }

@@ -11,20 +11,66 @@
  * For a full copy of the license in its entirety, please visit <https://www.mozilla.org/en-US/MPL/2.0/>
  */
 
-import { HawkAuthResponse } from './types'
+import { AxiosInstance } from 'axios'
+import { HawkAuthResponse, HawkAuthResponseBody } from './types'
+
+let authInfo: HawkAuthResponse
 
 /**
- * Authenticates the user with the provided username and password.
- *
- * @param {string} username - The username of the user.
- * @param {string} password - The password of the user.
- * @return {Promise<void>} A promise that resolves when the authentication is successful.
+ * Authenticates against the UtilityHawk API and stores the session cookie automatically. This cookie will be transparently refreshed if needed
+ * @param username Your UtilityHawk/AquaHawk username (Typically your email)
+ * @param password Your UtilityHawk/AquaHawk password
+ * @param {AxiosInstance} client The AxiosInstance of the API. This is created by the HawkClient
+ * @throws {Error} Throws an error if authentication wasn't successful. This is done as a convenience by the library
+ *      because the API will always return a 200 OK no matter what
  */
+export async function auth(username: string, password: string, client: AxiosInstance): Promise<HawkAuthResponse> {
+    const params = new URLSearchParams()
+    params.append('username', username)
+    params.append('password', password)
 
-let sessionCookie: string
-
-export async function auth(username: string, password: string): Promise<HawkAuthResponse> {
-    return new Promise((resolve, reject) => {
-
+    const response = await client.post('/login', params, {
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+        },
     })
+
+    const sessionCookie = response.headers['set-cookie']?.[0]
+    const responseData = response.data as HawkAuthResponseBody
+
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+    authInfo = { sessionCookie: sessionCookie!, body: responseData }
+    // The request will always have a success field to mark if the request was successful or not, since the API is dumb and returns 200 OK no matter what
+
+
+    return new Promise<HawkAuthResponse>((resolve, reject) => {
+        if (responseData.success) {
+            resolve(authInfo)
+        } else {
+            reject(new Error(JSON.stringify(response.data)))
+        }
+    })
+}
+
+/**
+ * @throws {Error} Throws an error if this method is called before authentication is even attempted
+ */
+export function needsRefresh(): boolean {
+    if (typeof authInfo === 'undefined') {
+        return true
+    }
+
+    const cookieParts: string[] = authInfo.sessionCookie.split(';')
+    const dateString = cookieParts[2]?.split('=')[1]
+    if (dateString) {
+        const dateObject = Date.parse(dateString)
+        const today = Date.now()
+        return dateObject < today
+    }
+
+    return true
+}
+
+export function getAuthInfo(): HawkAuthResponse {
+    return authInfo
 }
