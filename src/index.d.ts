@@ -1,17 +1,11 @@
-/*
- * Copyright (c) TerrorByte 2024.
- * This program is free software: You can redistribute it and/or modify it under the terms of the
- * Mozilla Public License 2.0 as published by the Mozilla under the Mozilla Foundation.
- *
- * This program is distributed in the hope that it will be useful, but provided on an "as is" basis,
- * without warranty of any kind, either expressed, implied, or statutory, including,
- * without limitation, warranties that the Covered Software is free of defects, merchantable,
- * fit for a particular purpose or non-infringing. See the MPL 2.0 license for more details.
- *
- * For a full copy of the license in its entirety, please visit <https://www.mozilla.org/en-US/MPL/2.0/>
- */
+interface HawkConfig {
+    username: string;
+    password: string;
+    districtName: string;
+    platform: "utilityhawk" | "aquahawk";
+}
 
-export interface HawkAuthResponseBody {
+interface HawkAuthResponseBody {
     success: boolean;
     message: string;
     activeUser: {
@@ -47,26 +41,19 @@ export interface HawkAuthResponseBody {
     errors: string[] | null;
 }
 
-export interface HawkConfig {
-    username: string;
-    password: string;
-    districtName: string;
-    platform: "utilityhawk" | "aquahawk";
-}
-
-export interface HawkAuthResponse {
+interface HawkAuthResponse {
     sessionCookie: string;
     body: HawkAuthResponseBody;
 }
 
-export interface TimeseriesMetrics {
+interface TimeseriesMetrics {
     electricUse: boolean;
     electricUseReading: boolean;
     temperature: boolean;
     rainfall: boolean;
 }
 
-export interface TimeseriesResults {
+interface TimeseriesResults {
     success: boolean;
     message: string;
     total: number;
@@ -148,3 +135,5 @@ export interface TimeseriesResults {
     firstTime: string;
     lastTime: string;
 }
+
+export type { HawkConfig, HawkAuthResponseBody, HawkAuthResponse, TimeseriesMetrics, TimeseriesResults }
