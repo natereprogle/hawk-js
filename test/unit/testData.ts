@@ -24,7 +24,8 @@ const config: HawkConfig = {
 }
 
 const authInfo: HawkAuthResponse = {
-    sessionCookie: 'connect.sid=s%89fu8eAOFJ89y.f7893ufuf98HFUE7f9e39f38jFNKJFQ%r83f; Path=/; Expires=Mon, 01 Jul 2024 15:40:33 GMT; HttpOnly',
+    // Arbitrarily large date to guarantee validity
+    sessionCookie: 'connect.sid=s%89fu8eAOFJ89y.f7893ufuf98HFUE7f9e39f38jFNKJFQ%r83f; Path=/; Expires=Mon, 01 Jul 2999 15:40:33 GMT; HttpOnly',
     body: {
         success: true,
         message: 'success',
