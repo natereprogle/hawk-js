@@ -23,7 +23,7 @@ export default [
     ...tseslint.configs.stylisticTypeChecked,
     ...tseslint.configs.strictTypeChecked,
     {
-        ignores: ['dist/*', 'eslint.config.mjs', '**/*.d.ts', 'tsup.config.js', '**/*.js'],
+        ignores: ['dist/*', 'eslint.config.mjs', '**/*.d.ts', 'tsup.config.js', '**/*.js', 'test/*'],
     },
     {
         files: ['**/*.ts'],
