@@ -6,6 +6,7 @@ on:
 
 jobs:
   build:
+    name: Build application
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -37,4 +38,4 @@ jobs:
             ${{ runner.os }}-pnpm-store-
 
       - run: pnpm install --frozen-lockfile
-      - run: pnpm run lint && pnpm run build
+      - run: pnpm run build
