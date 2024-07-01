@@ -47,8 +47,9 @@ jobs:
         uses: changesets/action@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
         with:
-          publish: pnpm run build
+          publish: pnpm run release
           commit: "chore: release"
           title: "chore: release"
           createGithubReleases: true
