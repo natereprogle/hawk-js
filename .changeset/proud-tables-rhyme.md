@@ -1,5 +1,5 @@
 ---
-"hawk-js": patch
+"@natereprogle/hawk-js": patch
 ---
 
 Finalize implementation of electric portion of API, add unit and functional tests.
