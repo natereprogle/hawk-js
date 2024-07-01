@@ -7,6 +7,7 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    environment: "Hawk Test"
     steps:
       - name: Checkout
         uses: actions/checkout@v4.1.7
@@ -38,3 +39,9 @@ jobs:
 
       - run: pnpm install --frozen-lockfile
       - run: pnpm test
+        env:
+          HAWK_USERNAME: ${{ secrets.HAWK_USERNAME }}
+          HAWK_PASSWORD: ${{ secrets.HAWK_PASSWORD }}
+          HAWK_DISTRICT: ${{ secrets.HAWK_DISTRICT }}
+          HAWK_PLATFORM: ${{ secrets.HAWK_PLATFORM }}
+          HAWK_ACCOUNT: ${{ secrets.HAWK_ACCOUNT }}
