@@ -1,5 +1,5 @@
 {
-  "name": "@matereprogle/hawk-js",
+  "name": "@natereprogle/hawk-js",
   "version": "0.0.1",
   "description": "",
   "main": "dist/index.js",
@@ -9,7 +9,7 @@
     "test": "jest",
     "build": "tsup",
     "lint": "eslint",
-    "release": "tsup && pnpm publish"
+    "release": "tsup && changeset publish"
   },
   "keywords": [],
   "author": "",
