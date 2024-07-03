@@ -15,6 +15,7 @@
 // This causes a warning when removed that the import can be shorter but, if it is shorter, then it will throw a warning due to circular references
 // noinspection ES6PreferShortImport
 import {
+    AccountUpdateConfig,
     AlertSeveritiesResponse,
     AlertsNotesResponse,
     AlertsResponse,
@@ -23,6 +24,7 @@ import {
     GetMetersResponse,
     HawkAuthResponse,
     HawkConfig,
+    RequireAtLeastOne,
     SortType,
     ThresholdAlertSettingsConfig,
     TimeseriesMetrics,
@@ -42,7 +44,7 @@ import { AuthService } from './AuthService'
  * If you have access to Water or Natural Gas through Utility/AquaHawk, please open an issue so we can work with you and add support.
  */
 export class HawkClient {
-    constructor(private requestService: RequestService) {
+    constructor(private _requestService: RequestService) {
     }
 
     /**
@@ -66,7 +68,7 @@ export class HawkClient {
      * @throws {Error} An error is thrown if authentication hasn't happened yet
      */
     public getSessionInformation(): HawkAuthResponse {
-        return this.requestService.getSessionInformation()
+        return this._requestService.getSessionInformation()
     }
 
     /**
@@ -76,7 +78,7 @@ export class HawkClient {
      * @returns {Promise<HawkAuthResponse>} The new session information
      */
     public async forceSessionRefresh(): Promise<HawkAuthResponse> {
-        if (this.requestService.checkIfAuthNeeded()) await this.requestService.refreshSession()
+        if (this._requestService.checkIfAuthNeeded()) await this._requestService.refreshSession()
         return this.getSessionInformation()
     }
 
@@ -85,7 +87,7 @@ export class HawkClient {
      * @returns {Promise<number>} The token's expiration time in Epoch (milliseconds)
      */
     public async getTokenExpirationTime(): Promise<number> {
-        if (this.requestService.checkIfAuthNeeded()) await this.requestService.refreshSession()
+        if (this._requestService.checkIfAuthNeeded()) await this._requestService.refreshSession()
 
         const cookieParts: string[] = this.getSessionInformation().sessionCookie.split(';')
         const dateString = cookieParts[2]?.split('=')[1]
@@ -122,7 +124,7 @@ export class HawkClient {
             temperature: true,
             rainfall: true,
         }): Promise<TimeseriesResponse> {
-        return this.requestService.getTimeseriesData(accountNumber, startTime, endTime, interval, extraStartTime, extraEndTime, metrics)
+        return this._requestService.getTimeseriesData(accountNumber, startTime, endTime, interval, extraStartTime, extraEndTime, metrics)
     }
 
     /**
@@ -137,7 +139,7 @@ export class HawkClient {
      * @returns {Promise<GetAccountsResponse>}
      */
     public async getAccounts(sort: SortType = 'alertSeverityRank', secondarySort: SortType = 'lastActiveTime', dir: 'asc' | 'desc' = 'desc', secondaryDir: 'asc' | 'desc' = 'desc', page = 1, start = 0, limit = 100): Promise<GetAccountsResponse> {
-        return this.requestService.getAccounts(sort, secondarySort, dir, secondaryDir, page, start, limit)
+        return this._requestService.getAccounts(sort, secondarySort, dir, secondaryDir, page, start, limit)
     }
 
     /**
@@ -148,7 +150,7 @@ export class HawkClient {
      * @returns {Promise<AlertTypes>}
      */
     public async getAlertTypes(page = 1, start = 0, limit = 25): Promise<AlertTypes> {
-        return this.requestService.getAlertTypes(page, start, limit)
+        return this._requestService.getAlertTypes(page, start, limit)
     }
 
     /**
@@ -162,7 +164,7 @@ export class HawkClient {
      * @returns {Promise<AlertsResponse>}
      */
     public async getAlerts(accountNumber: string, sort: SortType = 'updatedTime', dir: 'asc' | 'desc' = 'desc', page = 1, start = 0, limit = 100): Promise<AlertsResponse> {
-        return this.requestService.getAlerts(accountNumber, sort, dir, page, start, limit)
+        return this._requestService.getAlerts(accountNumber, sort, dir, page, start, limit)
     }
 
     /**
@@ -176,7 +178,7 @@ export class HawkClient {
      * @returns {Promise<AlertsNotesResponse>}
      */
     public async getAlertNotes(accountNumber: string, sort: SortType = 'savedTime', dir: 'asc' | 'desc' = 'desc', page = 1, start = 0, limit = 100): Promise<AlertsNotesResponse> {
-        return this.requestService.getAlertNotes(accountNumber, sort, dir, page, start, limit)
+        return this._requestService.getAlertNotes(accountNumber, sort, dir, page, start, limit)
     }
 
     /**
@@ -187,7 +189,7 @@ export class HawkClient {
      * @returns {Promise<AlertSeveritiesResponse>}
      */
     public async getAlertSeverities(page = 1, start = 0, limit = 25): Promise<AlertSeveritiesResponse> {
-        return this.requestService.getAlertSeverities(page, start, limit)
+        return this._requestService.getAlertSeverities(page, start, limit)
     }
 
     /**
@@ -202,7 +204,7 @@ export class HawkClient {
      * @param limit Limit. Defaults to 100
      */
     public async getMeterByAccountID(accountId: string, sort: SortType = 'alertSeverityRank', secondarySort: SortType = 'lastActiveTime', dir: 'asc' | 'desc' = 'desc', secondaryDir: 'asc' | 'desc' = 'desc', page = 1, start = 0, limit = 100) {
-        return this.requestService.getMeterByAccountID(accountId, sort, secondarySort, dir, secondaryDir, page, start, limit)
+        return this._requestService.getMeterByAccountID(accountId, sort, secondarySort, dir, secondaryDir, page, start, limit)
     }
 
     /**
@@ -216,15 +218,17 @@ export class HawkClient {
      * @returns {Promise<GetMetersResponse>}
      */
     public async getMeterByAccountNumber(accountNumber: string, sort: SortType = 'lastActiveTime', dir: 'asc' | 'desc', page: number, start: number, limit: number): Promise<GetMetersResponse> {
-        return this.requestService.getMeterByAccountNumber(accountNumber, sort, dir, page, start, limit)
+        return this._requestService.getMeterByAccountNumber(accountNumber, sort, dir, page, start, limit)
     }
 
     /**
      * Get current account and meter alerting settings. See {@link updateAlertSettings} to update these settings
+     * @param accountId An optional userId to pass in to specify which accountId you want to query alert settings for.
+     *      If none is specified, hawk-js will default to the first one returned in the AuthBody
      * @returns {Promise<ThresholdAlertSettingsConfig>}
      */
-    public async getCurrentAlertSettings(): Promise<ThresholdAlertSettingsConfig> {
-        return this.requestService.getCurrentAlertSettings()
+    public async getCurrentAlertSettings(accountId?: string): Promise<ThresholdAlertSettingsConfig> {
+        return this._requestService.getCurrentAlertSettings(accountId)
     }
 
     /**
@@ -236,6 +240,44 @@ export class HawkClient {
      * @returns {Promise<UpdateAlertSettingsResponse>}
      */
     public async updateAlertSettings(config: ThresholdAlertSettingsConfig, meterId?: string): Promise<UpdateAlertSettingsResponse> {
-        return this.requestService.updateAlertSettings(config, meterId)
+        return this._requestService.updateAlertSettings(config, meterId)
+    }
+
+    /**
+     *
+     * @param accountId
+     */
+    public async getUserProfileSettings(accountId?: string) {
+        return this._requestService.getUserProfileSettings(accountId)
+    }
+
+    /**
+     *
+     * @param settings
+     * @param updateInfo
+     * @param accountId
+     */
+    public async changeUserProfileSettings(settings: 'cellPhone' | 'homePhone' | 'email' | 'workPhone' | 'doNotContact' | 'text', updateInfo: RequireAtLeastOne<AccountUpdateConfig, 'cellPhone' | 'homePhone' | 'workPhone'>, accountId?: string) {
+        return this._requestService.changeUserProfileSettings(settings, updateInfo, accountId);
+    }
+
+    public async registerAccounts() {
+        return this._requestService.registerAccounts()
+    }
+
+    public async exportDataToCsv() {
+        return this._requestService.exportDataToCsv()
+    }
+
+    public async getExportedData() {
+        return this._requestService.getExportedData()
+    }
+
+    public async changePassword() {
+        return this._requestService.changePassword()
+    }
+
+    public async getReports() {
+        return this._requestService.getReports()
     }
 }

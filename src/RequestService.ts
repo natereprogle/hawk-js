@@ -1,4 +1,19 @@
+/*
+ * Copyright (c) TerrorByte 2024. 
+ * This program is free software: You can redistribute it and/or modify it under the terms of the 
+ * Mozilla Public License 2.0 as published by the Mozilla under the Mozilla Foundation.
+ *                                                                                                  
+ * This program is distributed in the hope that it will be useful, but provided on an "as is" basis, 
+ * without warranty of any kind, either expressed, implied, or statutory, including, 
+ * without limitation, warranties that the Covered Software is free of defects, merchantable, 
+ * fit for a particular purpose or non-infringing. See the MPL 2.0 license for more details.
+ *                                                                                                  
+ * For a full copy of the license in its entirety, please visit <https://www.mozilla.org/en-US/MPL/2.0/>
+ */
+
 import {
+    AccountSettingsResponse,
+    AccountUpdateConfig,
     AlertSeveritiesResponse,
     AlertsNotesResponse,
     AlertsResponse,
@@ -7,6 +22,7 @@ import {
     GetMetersResponse,
     HawkAuthResponse,
     HawkConfig,
+    RequireAtLeastOne,
     SortType,
     ThresholdAlertSettingsConfig,
     TimeseriesMetrics,
@@ -206,10 +222,14 @@ class RequestService {
         return response.data
     }
 
-    async getCurrentAlertSettings(): Promise<ThresholdAlertSettingsConfig> {
+    async getCurrentAlertSettings(accountId?: string): Promise<ThresholdAlertSettingsConfig> {
         if (this.checkIfAuthNeeded()) await this._authService.authenticate(this._config.username, this._config.password, this._instance)
 
-        const accountId = this._authService.getAuthInfo().body.activeUser?.attributes.accountIdArray[0]
+        // If one wasn't provided we'll try to retrieve it from the accountIdArray in the AuthInfo body
+        if (!accountId) {
+            accountId = this._authService.getAuthInfo().body.activeUser?.attributes.accountIdArray[0]
+        }
+
         if (accountId) {
             const meters = await this._instance.get<GetMetersResponse>('/meters', {
                 params: {
@@ -251,7 +271,7 @@ class RequestService {
 
             return convertToFriendlyConfig(accounts.data, meters.data)
         } else {
-            throw new Error('Failed to get current account settings, an accountId could not be retrieved from previous auth requests')
+            throw new Error('Failed to get current alerting settings, an accountId could not be retrieved from previous auth requests nor was one wasn\'t provided')
         }
     }
 
@@ -306,6 +326,85 @@ class RequestService {
 
     async refreshSession(): Promise<HawkAuthResponse> {
         return await this._authService.authenticate(this._config.username, this._config.password, this._instance)
+    }
+
+    async getUserProfileSettings(accountId?: string): Promise<AccountSettingsResponse> {
+        if (this.checkIfAuthNeeded()) await this._authService.authenticate(this._config.username, this._config.password, this._instance)
+
+        // If one wasn't provided we'll try to retrieve it from the accountIdArray in the AuthInfo body
+        if (!accountId) {
+            accountId = this._authService.getAuthInfo().body.activeUser?.attributes.accountIdArray[0]
+        }
+
+        if (accountId) {
+            const response = await this._instance.get<AccountSettingsResponse>(`/users/${accountId}`, {
+                params: {
+                    '_dc': Date.now(),
+                },
+            })
+
+            return response.data
+        } else {
+            throw new Error('Failed to get current account settings, an accountId could not be retrieved from previous auth requests nor was one wasn\'t provided')
+        }
+    }
+
+    async changeUserProfileSettings(contactPreference: 'cellPhone' | 'homePhone' | 'email' | 'workPhone' | 'doNotContact' | 'text', updateInfo: RequireAtLeastOne<AccountUpdateConfig, 'cellPhone' | 'homePhone' | 'workPhone'>, accountId?: string): Promise<AccountSettingsResponse> {
+        if (this.checkIfAuthNeeded()) await this._authService.authenticate(this._config.username, this._config.password, this._instance)
+
+        // If one wasn't provided we'll try to retrieve it from the accountIdArray in the AuthInfo body
+        if (!accountId) {
+            accountId = this._authService.getAuthInfo().body.activeUser?.attributes.accountIdArray[0]
+        }
+
+        const data = await this.getUserProfileSettings(accountId);
+        const updatedInfo = Object.assign({}, data.users, updateInfo)
+        updatedInfo.contactPreference = { [contactPreference]: true }
+
+        if (accountId) {
+            const response = await this._instance.put<AccountSettingsResponse>(`/users/${accountId}`, updatedInfo, {
+                params: {
+                    '_dc': Date.now(),
+                    'notify': 1
+                },
+            }).catch((error: unknown) => {
+                throw new Error(`An error occurred while updating your account: ${error as string}`)
+            })
+
+            return response.data
+        } else {
+            throw new Error('Failed to get current account settings, an accountId could not be retrieved from previous auth requests nor was one wasn\'t provided')
+        }
+    }
+
+    async registerAccounts() {
+        if (this.checkIfAuthNeeded()) await this._authService.authenticate(this._config.username, this._config.password, this._instance)
+
+        return Promise.resolve(undefined)
+    }
+
+    async exportDataToCsv() {
+        if (this.checkIfAuthNeeded()) await this._authService.authenticate(this._config.username, this._config.password, this._instance)
+
+        return Promise.resolve(undefined)
+    }
+
+    async getExportedData() {
+        if (this.checkIfAuthNeeded()) await this._authService.authenticate(this._config.username, this._config.password, this._instance)
+
+        return Promise.resolve(undefined)
+    }
+
+    async changePassword() {
+        if (this.checkIfAuthNeeded()) await this._authService.authenticate(this._config.username, this._config.password, this._instance)
+
+        return Promise.resolve(undefined)
+    }
+
+    async getReports() {
+        if (this.checkIfAuthNeeded()) await this._authService.authenticate(this._config.username, this._config.password, this._instance)
+
+        return Promise.resolve(undefined)
     }
 }
 

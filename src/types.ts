@@ -1,17 +1,17 @@
-// noinspection DuplicatedCode
-
 /*
- * Copyright (c) TerrorByte 2024.
- * This program is free software: You can redistribute it and/or modify it under the terms of the
+ * Copyright (c) TerrorByte 2024. 
+ * This program is free software: You can redistribute it and/or modify it under the terms of the 
  * Mozilla Public License 2.0 as published by the Mozilla under the Mozilla Foundation.
- *
- * This program is distributed in the hope that it will be useful, but provided on an "as is" basis,
- * without warranty of any kind, either expressed, implied, or statutory, including,
- * without limitation, warranties that the Covered Software is free of defects, merchantable,
+ *                                                                                                  
+ * This program is distributed in the hope that it will be useful, but provided on an "as is" basis, 
+ * without warranty of any kind, either expressed, implied, or statutory, including, 
+ * without limitation, warranties that the Covered Software is free of defects, merchantable, 
  * fit for a particular purpose or non-infringing. See the MPL 2.0 license for more details.
- *
+ *                                                                                                  
  * For a full copy of the license in its entirety, please visit <https://www.mozilla.org/en-US/MPL/2.0/>
  */
+
+// noinspection DuplicatedCode
 
 interface HawkAuthResponseBody {
     success: boolean;
@@ -2009,6 +2009,53 @@ interface GetMetersResponse {
     }[]
 }
 
+interface AccountSettingsResponse {
+    success: boolean
+    message: string
+    total: number
+    users: {
+        __v: number
+        _id: string
+        alias: string
+        attributes: {
+            accountIdArray: string[]
+        }
+        emailAddress: string
+        enabled: boolean
+        firstLoginTime: string
+        lastLoginTime: string
+        name: {
+            first: string
+            last: string
+        }
+        setupTime: string
+        updatedTime: string
+        username: string
+        contactPreference: Record<string, boolean>
+        mailingAddress: {
+            address: string
+            city: string
+            state: string
+            zip: string
+        }
+        workPhone?: {
+            areaCode: string
+            prefix: string
+            suffix: string
+        }
+        homePhone?: {
+            areaCode: string
+            prefix: string
+            suffix: string
+        }
+        cellPhone?: {
+            areaCode: string
+            prefix: string
+            suffix: string
+        }
+    }
+}
+
 interface AccountThresholdAlertSettings {
     'alertSettings.billAmount.threshold.billing period alert over': boolean
     'alertSettings.billAmount.threshold.billing period alert projected': boolean
@@ -2141,8 +2188,44 @@ interface UpdateAlertSettingsResponse {
     meterContinuousResponse?: GetMetersResponse;
 }
 
+interface AccountUpdateConfig {
+    homePhone?: {
+        areaCode: string
+        prefix: string
+        suffix: string
+    }
+    cellPhone?: {
+        areaCode: string
+        prefix: string
+        suffix: string
+    }
+    workPhone?: {
+        areaCode: string
+        prefix: string
+        suffix: string
+        ext: string
+    }
+    alias?: string
+    mailingAddress: {
+        address: string
+        city: string
+        state: string
+        zip: string
+    }
+    name: {
+        first: string
+        last: string
+    }
+    emailAddress: string
+}
 
 type SortType = 'alertSeverityRank' | 'lastActiveTime' | 'updatedTime' | 'savedTime'
+
+type RequireAtLeastOne<T, Keys extends keyof T = keyof T> =
+    Pick<T, Exclude<keyof T, Keys>>
+    & {
+        [K in Keys]-?: Required<Pick<T, K>> & Partial<Pick<T, Exclude<Keys, K>>>
+    }[Keys]
 
 export {
     HawkAuthResponse,
@@ -2162,4 +2245,7 @@ export {
     ThresholdAlertSettingsConfig,
     GetAccountsResponse,
     UpdateAlertSettingsResponse,
+    AccountSettingsResponse,
+    RequireAtLeastOne,
+    AccountUpdateConfig
 }
