@@ -14,6 +14,7 @@
 import {
     AccountSettingsResponse,
     AccountUpdateConfig,
+    AddAccountRequest,
     AlertSeveritiesResponse,
     AlertsNotesResponse,
     AlertsResponse,
@@ -22,6 +23,8 @@ import {
     GetMetersResponse,
     HawkAuthResponse,
     HawkConfig,
+    RegisterAccountsResponse,
+    RemoveAccountRequest,
     RequireAtLeastOne,
     SortType,
     ThresholdAlertSettingsConfig,
@@ -377,10 +380,28 @@ class RequestService {
         }
     }
 
-    async registerAccounts() {
+    async registerAccounts(account: AddAccountRequest): Promise<RegisterAccountsResponse> {
         if (this.checkIfAuthNeeded()) await this._authService.authenticate(this._config.username, this._config.password, this._instance)
 
-        return Promise.resolve(undefined)
+        const response = await this._instance.post<AccountSettingsResponse>(`/registerAccounts/`, account, {
+            params: {
+                'add': true
+            },
+        })
+
+        return response.data
+    }
+
+    async removeAccount(account: RemoveAccountRequest): Promise<RegisterAccountsResponse> {
+        if (this.checkIfAuthNeeded()) await this._authService.authenticate(this._config.username, this._config.password, this._instance)
+
+        const response = await this._instance.post<AccountSettingsResponse>(`/registerAccounts/`, account, {
+            params: {
+                'remove': true
+            },
+        })
+
+        return response.data
     }
 
     async exportDataToCsv() {
@@ -395,10 +416,19 @@ class RequestService {
         return Promise.resolve(undefined)
     }
 
-    async changePassword() {
+    async changePassword(newPassword: string, confirmPassword?: string) {
         if (this.checkIfAuthNeeded()) await this._authService.authenticate(this._config.username, this._config.password, this._instance)
 
-        return Promise.resolve(undefined)
+        if (confirmPassword && newPassword !== confirmPassword)
+            throw new Error("Passwords do not match!")
+
+        const response = await this._instance.post<AccountSettingsResponse>(`/registerAccounts/`, {
+            oldPassword: this._config.password,
+            newPassword1: newPassword,
+            newPassword2: newPassword
+        })
+
+        return response.data
     }
 
     async getReports() {

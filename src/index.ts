@@ -16,6 +16,7 @@
 // noinspection ES6PreferShortImport
 import {
     AccountUpdateConfig,
+    AddAccountRequest,
     AlertSeveritiesResponse,
     AlertsNotesResponse,
     AlertsResponse,
@@ -24,6 +25,7 @@ import {
     GetMetersResponse,
     HawkAuthResponse,
     HawkConfig,
+    RemoveAccountRequest,
     RequireAtLeastOne,
     SortType,
     ThresholdAlertSettingsConfig,
@@ -244,25 +246,38 @@ export class HawkClient {
     }
 
     /**
-     *
-     * @param accountId
+     * Retrieve your account settings. If you have multiple account Ids, you may provide one to retrieve specifically those settings
+     * @param accountId An optional accountId for the account you want to retrieve settings from
      */
     public async getUserProfileSettings(accountId?: string) {
         return this._requestService.getUserProfileSettings(accountId)
     }
 
     /**
-     *
-     * @param settings
-     * @param updateInfo
-     * @param accountId
+     * Updates settings for your account. An optional accountId parameter is provided for you to specify which account to update if you have more than one
+     * @param contactPreference The method of contact you'd like UtilityHawk/AquaHawk to use to reach you
+     * @param updateInfo All the information you want updated on your account. You must provide at least one of workPhone, cellPhone, or homePhone, as UtilityHawk/AquaHawk requires at least one on your account
+     * @param accountId An optional accountId to specify the account you want to update
      */
-    public async changeUserProfileSettings(settings: 'cellPhone' | 'homePhone' | 'email' | 'workPhone' | 'doNotContact' | 'text', updateInfo: RequireAtLeastOne<AccountUpdateConfig, 'cellPhone' | 'homePhone' | 'workPhone'>, accountId?: string) {
-        return this._requestService.changeUserProfileSettings(settings, updateInfo, accountId);
+    public async changeUserProfileSettings(contactPreference: 'cellPhone' | 'homePhone' | 'email' | 'workPhone' | 'doNotContact' | 'text', updateInfo: RequireAtLeastOne<AccountUpdateConfig, 'cellPhone' | 'homePhone' | 'workPhone'>, accountId?: string) {
+        return this._requestService.changeUserProfileSettings(contactPreference, updateInfo, accountId);
     }
 
-    public async registerAccounts() {
-        return this._requestService.registerAccounts()
+    /**
+     * Adds a utility account to your UtilityHawk/AquaHawk account.
+     * This endpoint always returns 200 for some godforsaken reason, so be sure to check the success flag for success or failure
+     * @param account The account information to register
+     */
+    public async registerAccounts(account: AddAccountRequest) {
+        return this._requestService.registerAccounts(account)
+    }
+
+    /**
+     * Removes a utility account from your UtilityHawk/AquaHawk account
+     * @param account The account information you want to remove
+     */
+    public async removeAccount(account: RemoveAccountRequest) {
+        return this._requestService.removeAccount(account)
     }
 
     public async exportDataToCsv() {
@@ -273,8 +288,21 @@ export class HawkClient {
         return this._requestService.getExportedData()
     }
 
-    public async changePassword() {
-        return this._requestService.changePassword()
+    /**
+     * Changes your account password. This assumes you're already authenticated to UtilityHawk/AquaHawk, meaning you don't have to confirm your old password.
+     * A second parameter, `confirmPassword`, is available if you want to ensure you're entering the same password twice (Say, for user input)
+     *
+     * This method will automatically update the password in the config for hawk-js. Be sure to provide the new password the next time you create a hawk-js client object.
+     *
+     * This endpoint *can* return a `412 Precondition Failed`, but since hawk-js handles checks internally you will never receive that error. You only have to worry about error handling if
+     * you provide the `confirmPassword` parameter, and it's not the same as `newPassword`
+     *
+     * @param newPassword The new password to set on your account
+     * @param confirmPassword An optional parameter that allows you to provide your password a second time to guarantee they're the same and you didn't accidentally make a typo during input
+     * @throws Error Thrown when `confirmPassword` is provided but does not match `newPassword`
+     */
+    public async changePassword(newPassword: string, confirmPassword?: string) {
+        return this._requestService.changePassword(newPassword, confirmPassword)
     }
 
     public async getReports() {

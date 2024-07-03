@@ -2219,6 +2219,55 @@ interface AccountUpdateConfig {
     emailAddress: string
 }
 
+interface RemoveAccountRequest {
+    accountNumber: string
+    accountName: string
+    serviceAddress: {
+        address: string
+        city: string
+        state: string
+        zip: string
+    }
+}
+
+interface AddAccountRequest {
+    accountTag1: string
+    accountTag2: string
+    accountTag3: string
+    accountNumber: string
+    accountName: string
+    serviceAddress: {
+        address: string
+        city: string
+        state: string
+        zip: string
+    }
+}
+
+interface RegisterAccountsResponse {
+    success: boolean
+    message: string
+    messageLocale?: string
+    errors?: {
+        accountNumber: string
+        accountTag1: string
+        accountTag2: string
+        accountTag3: string
+    }
+    errorsLocale?: {
+        accountNumber: string
+        accountTag1: string
+        accountTag2: string
+        accountTag3: string
+    }
+}
+
+interface PasswordChangeResponse {
+    success: boolean,
+    message: string,
+    returnCode: number
+}
+
 type SortType = 'alertSeverityRank' | 'lastActiveTime' | 'updatedTime' | 'savedTime'
 
 type RequireAtLeastOne<T, Keys extends keyof T = keyof T> =
@@ -2247,5 +2296,9 @@ export {
     UpdateAlertSettingsResponse,
     AccountSettingsResponse,
     RequireAtLeastOne,
-    AccountUpdateConfig
+    AccountUpdateConfig,
+    RemoveAccountRequest,
+    AddAccountRequest,
+    RegisterAccountsResponse,
+    PasswordChangeResponse
 }
