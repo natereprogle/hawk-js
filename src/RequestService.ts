@@ -305,6 +305,9 @@ class RequestService {
                 '_dc': Date.now(),
                 setFields: accountThresholdConfig,
             },
+            headers: {
+                'Cookie': this._authService.getAuthInfo().sessionCookie,
+            },
         })
 
         if (meterId) {
@@ -315,6 +318,9 @@ class RequestService {
                     '_dc': Date.now(),
                     setFields: meterThresholdConfig,
                 },
+                headers: {
+                    'Cookie': this._authService.getAuthInfo().sessionCookie,
+                },
             })
 
             const meterContinuousResponse: GetMetersResponse = await this._instance.put(`/meters/${meterId}`, {
@@ -323,6 +329,9 @@ class RequestService {
                 params: {
                     '_dc': Date.now(),
                     setFields: meterContinuousThresholdConfig,
+                },
+                headers: {
+                    'Cookie': this._authService.getAuthInfo().sessionCookie,
                 },
             })
 
@@ -348,6 +357,9 @@ class RequestService {
             const response = await this._instance.get<AccountSettingsResponse>(`/users/${accountId}`, {
                 params: {
                     '_dc': Date.now(),
+                },
+                headers: {
+                    'Cookie': this._authService.getAuthInfo().sessionCookie,
                 },
             })
 
@@ -375,6 +387,9 @@ class RequestService {
                     '_dc': Date.now(),
                     'notify': 1,
                 },
+                headers: {
+                    'Cookie': this._authService.getAuthInfo().sessionCookie,
+                },
             }).catch((error: unknown) => {
                 throw new Error(`An error occurred while updating your account: ${error as string}`)
             })
@@ -392,6 +407,9 @@ class RequestService {
             params: {
                 'add': true,
             },
+            headers: {
+                'Cookie': this._authService.getAuthInfo().sessionCookie,
+            },
         })
 
         return response.data
@@ -404,6 +422,9 @@ class RequestService {
             params: {
                 'remove': true,
             },
+            headers: {
+                'Cookie': this._authService.getAuthInfo().sessionCookie,
+            },
         })
 
         return response.data
@@ -412,7 +433,20 @@ class RequestService {
     async exportDataToCsv(exportOptions: DataExportOptions): Promise<DataExportResponse> {
         if (this.checkIfAuthNeeded()) await this._authService.authenticate(this._config.username, this._config.password, this._instance)
 
-        const response = await this._instance.post<DataExportResponse>(`/timeseries/export`, exportOptions)
+        const params = new URLSearchParams()
+        for (const [key, value] of Object.entries(exportOptions)) {
+            if (value !== undefined) {
+                params.append(key, String(value))
+            }
+        }
+
+        const response = await this._instance.post<DataExportResponse>(`/timeseries/export`, params, {
+            headers: {
+                ...this._instance.defaults.headers.common,
+                'Content-Type': 'application/x-www-form-urlencoded',
+                'Cookie': this._authService.getAuthInfo().sessionCookie,
+            },
+        })
 
         return response.data
     }
@@ -428,17 +462,20 @@ class RequestService {
                     username: username,
                     type: type,
                     filename: filename,
-                    display: true
-                }
+                    display: true,
+                },
+                headers: {
+                    'Cookie': this._authService.getAuthInfo().sessionCookie,
+                },
             })
 
             return response.data
         }
 
-        let addTrailingSlash = false;
+        let addTrailingSlash = false
 
         // Check if fileSaveLocation was passed and the last character doesn't include a '/' or '\'. If so, make sure we add it to the filepath later
-        if (fileSaveLocation && !['/', "\\"].includes(fileSaveLocation.charAt(fileSaveLocation.length - 1))) {
+        if (fileSaveLocation && !['/', '\\'].includes(fileSaveLocation.charAt(fileSaveLocation.length - 1))) {
             addTrailingSlash = true
         }
 
@@ -453,6 +490,9 @@ class RequestService {
                         type: type,
                         filename: filename,
                     },
+                    headers: {
+                        'Cookie': this._authService.getAuthInfo().sessionCookie,
+                    },
                     responseType: 'arraybuffer',
                 })
 
@@ -461,10 +501,10 @@ class RequestService {
                     // Windows uses \ by default, but doesn't complain about /. You can even mix and match \ and /. Neat!
                     await writeFile(fileSaveLocation + (addTrailingSlash ? '/' : '') + filename + '.csv', fileData)
                 } else {
-                    await writeFile(process.cwd() + '/report.csv', fileData)
+                    await writeFile(process.cwd() + `/${filename}`, fileData)
                 }
 
-                return true;
+                return true
 
             } catch (err: unknown) {
                 throw new Error(`An error occurred while downloading and/or saving the report: ${err as string}`)
@@ -476,7 +516,11 @@ class RequestService {
                 username: username,
                 type: type,
                 filename: filename,
-            }).toString()).then(response => response.blob()).then(blob => {
+            }).toString(), {
+                headers: {
+                    'Cookie': this._authService.getAuthInfo().sessionCookie,
+                },
+            }).then(response => response.blob()).then(blob => {
                 const url = window.URL.createObjectURL(blob)
                 const a = document.createElement('a')
                 a.href = url
@@ -488,25 +532,30 @@ class RequestService {
                 throw new Error(`An error occurred while downloading and/or saving the report: ${err as string}`)
             })
 
-            return true;
+            return true
         }
     }
 
     async changePassword(newPassword: string, confirmPassword?: string): Promise<PasswordChangeResponse> {
         if (this.checkIfAuthNeeded()) await this._authService.authenticate(this._config.username, this._config.password, this._instance)
 
-        if (confirmPassword && newPassword != confirmPassword)
+        if (confirmPassword && newPassword !== confirmPassword) {
             throw new Error('Passwords do not match!')
+        }
 
         const response = await this._instance.post<PasswordChangeResponse>(`/changepassword`, {
             oldPassword: this._config.password,
             newPassword1: newPassword,
             newPassword2: newPassword,
+        }, {
+            headers: {
+                'Cookie': this._authService.getAuthInfo().sessionCookie,
+            },
         })
 
         // Update the password in config and refresh the authentication. I'm not sure if the session token expires, but it's
         // a good idea to do this anyway
-        this._config.password = newPassword;
+        this._config.password = newPassword
         await this._authService.authenticate(this._config.username, this._config.password, this._instance)
 
         return response.data
@@ -520,7 +569,10 @@ class RequestService {
                 districtName: this._config.districtName,
                 page: page,
                 start: start,
-                limit: limit
+                limit: limit,
+            },
+            headers: {
+                'Cookie': this._authService.getAuthInfo().sessionCookie,
             },
         })
 

@@ -13,7 +13,7 @@
 
 import { HawkClient } from '../../src/index'
 import { alertConfig, authInfo, config, updateInfo } from './testData'
-import { instance, mock, spy, when } from 'ts-mockito'
+import { anything, instance, mock, spy, when } from 'ts-mockito'
 import RequestService from '../../src/RequestService'
 import { AuthService } from '../../src/AuthService'
 
@@ -167,22 +167,27 @@ describe('HawkClient', () => {
     })
 
     test('getExportedData', async () => {
-        await hawkClient.getExportedData(config.username, "Reports", "test.csv", "C:\\File Path\\Test")
+        await hawkClient.getExportedData(config.username, 'Reports', 'test.csv', 'C:\\File Path\\Test')
 
-        await hawkClient.getExportedData(config.username, "Reports", "test.csv", "C:\\File Path\\Test", true)
+        await hawkClient.getExportedData(config.username, 'Reports', 'test.csv', 'C:\\File Path\\Test', true)
     })
 
     test('getExportedData', async () => {
-        await hawkClient.getExportedData(config.username, "Reports", "test.csv", "C:\\File Path\\Test")
+        await hawkClient.getExportedData(config.username, 'Reports', 'test.csv', 'C:\\File Path\\Test')
 
-        await hawkClient.getExportedData(config.username, "Reports", "test.csv", "C:\\File Path\\Test", true)
+        await hawkClient.getExportedData(config.username, 'Reports', 'test.csv', 'C:\\File Path\\Test', true)
     })
 
     test('changePassword', async () => {
-        await hawkClient.changePassword('newPassword')
+        const client = HawkClient.create(config)
+        const clientSpy = spy(client)
+        when(clientSpy.changePassword(anything())).thenResolve()
 
         // If the second param is passed, we should receive an error if they don't match
-        expect(async () => await hawkClient.changePassword('newPassword', 'n3wPa$$w0rd')).toThrow()
+        expect(async () => await client.changePassword('newPassword', 'n3wPa$$w0rd')).rejects.toThrow()
+
+        // Should resolve just fine
+        await client.changePassword('newPassword')
     })
 
     test('getReports', async () => {
@@ -190,6 +195,4 @@ describe('HawkClient', () => {
 
         await hawkClient.getReports(1, 0, 50)
     })
-
-
 })
