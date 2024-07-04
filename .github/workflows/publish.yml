@@ -16,6 +16,8 @@ jobs:
       issues: write
       pull-requests: write
       packages: write
+    outputs:
+      published: ${{ steps.changesets.outputs.published }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -66,6 +68,7 @@ jobs:
       contents: read
       packages: write
     runs-on: ubuntu-latest
+    if: needs.build.outputs.published == truew
     steps:
       - name: Checkout
         uses: actions/checkout@v4

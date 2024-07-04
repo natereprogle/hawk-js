@@ -8,7 +8,7 @@ on:
 
 jobs:
   qodana:
-    name: Run Qodana and ESLint
+    name: Run Qodana and Test
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -41,48 +41,7 @@ jobs:
             ${{ runner.os }}-pnpm-store-
 
       - run: pnpm install --frozen-lockfile
-      - name: 'Qodana Scan'
-        uses: JetBrains/qodana-action@v2024.1.5
-        env:
-          QODANA_TOKEN: ${{ secrets.QODANA_TOKEN }}
-        with:
-          args: --baseline,qodana.sarif.json
 
-  test:
-    name: Run tests after Qodana passes
-    runs-on: ubuntu-latest
-    environment: "Hawk Test"
-    needs: qodana
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4.1.7
-
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v4
-        with:
-          version: ^9.4.0
-          run_install: false
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4.0.2
-        with:
-          node-version: 20.*
-          cache: 'pnpm'
-
-      - name: Get pnpm store directory
-        shell: bash
-        run: |
-          echo "STORE_PATH=$(pnpm store path --silent)" >> $GITHUB_ENV
-
-      - uses: actions/cache@v4
-        name: Setup pnpm cache
-        with:
-          path: ${{ env.STORE_PATH }}
-          key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
-          restore-keys: |
-            ${{ runner.os }}-pnpm-store-
-
-      - run: pnpm install --frozen-lockfile
       - run: pnpm test
         env:
           HAWK_USERNAME: ${{ secrets.HAWK_USERNAME }}
@@ -90,3 +49,16 @@ jobs:
           HAWK_DISTRICT: ${{ secrets.HAWK_DISTRICT }}
           HAWK_PLATFORM: ${{ secrets.HAWK_PLATFORM }}
           HAWK_ACCOUNT: ${{ secrets.HAWK_ACCOUNT }}
+
+      - name: Archive coverage data
+        uses: actions/upload-artifact@v2
+        with:
+          name: jest-coverage-data
+          path: .qodana/code-coverage
+
+      - name: 'Qodana Scan'
+        uses: JetBrains/qodana-action@v2024.1.5
+        env:
+          QODANA_TOKEN: ${{ secrets.QODANA_TOKEN }}
+        with:
+          args: --baseline,qodana.sarif.json

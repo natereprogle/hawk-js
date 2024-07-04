@@ -4,6 +4,7 @@ import * as dotenvx from '@dotenvx/dotenvx'
 import { HawkClient } from '../../src/index'
 import { toISO8601WithTimezone } from '../unit/testData'
 import { DataExportOptions } from '../../src/types'
+import { existsSync, unlinkSync } from 'node:fs'
 
 dotenvx.config()
 
@@ -66,6 +67,11 @@ describe('HawkJs', () => {
 
         const success = await hawkClient.getExportedData(HAWK_USERNAME, 'Reports', data.filename)
         expect(success).toBe(true)
+
+        const path = `./${data.filename}`
+        if (existsSync(path)) {
+            unlinkSync(path)
+        }
     })
 
     it('should get a list of reports', async () => {
