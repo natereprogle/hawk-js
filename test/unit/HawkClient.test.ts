@@ -11,11 +11,6 @@
  * For a full copy of the license in its entirety, please visit <https://www.mozilla.org/en-US/MPL/2.0/>
  */
 
-// noinspection JSVoidFunctionReturnValueUsed
-
-// noinspection JSVoidFunctionReturnValueUsed
-// noinspection JSVoidFunctionReturnValueUsed
-// noinspection JSVoidFunctionReturnValueUsed
 import { HawkClient } from '../../src/index'
 import { alertConfig, authInfo, config, updateInfo } from './testData'
 import { instance, mock, spy, when } from 'ts-mockito'
@@ -29,6 +24,8 @@ describe('HawkClient', () => {
 
         const authServiceMock = mock(AuthService)
         const requestServiceMock = mock(RequestService)
+
+        // noinspection JSVoidFunctionReturnValueUsed
         when(authServiceMock.setAuthInfo(authInfo)).thenReturn(undefined)
 
         hawkClient = new HawkClient(instance(requestServiceMock))
