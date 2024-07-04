@@ -7,6 +7,8 @@
   "types": "dist/index.d.ts",
   "scripts": {
     "test": "jest --coverage",
+    "test:unit": "jest test/unit",
+    "test:functional": "jest test/functional",
     "build": "tsup",
     "lint": "eslint",
     "release": "tsup && changeset publish"

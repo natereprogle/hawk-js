@@ -220,7 +220,7 @@ export class HawkClient {
      * @param limit Limit. Defaults to 100
      * @returns {Promise<GetMetersResponse>}
      */
-    public async getMeterByAccountNumber(accountNumber: string, sort: SortType = 'lastActiveTime', dir: 'asc' | 'desc', page: number, start: number, limit: number): Promise<GetMetersResponse> {
+    public async getMeterByAccountNumber(accountNumber: string, sort: SortType = 'lastActiveTime', dir: 'asc' | 'desc' = 'desc', page = 1, start = 0, limit = 100): Promise<GetMetersResponse> {
         return this._requestService.getMeterByAccountNumber(accountNumber, sort, dir, page, start, limit)
     }
 

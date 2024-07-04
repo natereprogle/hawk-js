@@ -10,6 +10,7 @@ jobs:
   qodana:
     name: Run Qodana and Test
     runs-on: ubuntu-latest
+    environment: "Hawk Test"
     steps:
       - uses: actions/checkout@v4
         with:
