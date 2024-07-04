@@ -2268,6 +2268,48 @@ interface PasswordChangeResponse {
     returnCode: number
 }
 
+interface DataExportOptions {
+    firstTime: string
+    lastTime: string
+    interval: '1 hour' | '1 day' | '1 month'
+    districtName: string
+    accountNumber?: string
+}
+
+interface DataExportResponse {
+    success: boolean
+    message: string
+    district: string
+    username: string
+    filename: string
+    type: string
+}
+
+interface GetReportsResponse {
+    success: boolean
+    message: string
+    total: number
+    list: {
+        fileName: string
+        fileType: string
+        fileGroup: string
+        fileGroupTitle?: string
+        fileGroupSubtitle?: string
+        fileGroupInformation?: string
+        displayName: string
+        download: {
+            district: string
+            type: string
+            username: string
+            filename: string
+        }
+        _id: number
+        fileExt?: string
+        fileTime?: string
+        fileSize?: number
+    }[]
+}
+
 type SortType = 'alertSeverityRank' | 'lastActiveTime' | 'updatedTime' | 'savedTime'
 
 type RequireAtLeastOne<T, Keys extends keyof T = keyof T> =
@@ -2300,5 +2342,8 @@ export {
     RemoveAccountRequest,
     AddAccountRequest,
     RegisterAccountsResponse,
-    PasswordChangeResponse
+    PasswordChangeResponse,
+    DataExportOptions,
+    DataExportResponse,
+    GetReportsResponse
 }

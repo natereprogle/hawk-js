@@ -1,7 +1,23 @@
+/*
+ * Copyright (c) TerrorByte 2024.
+ * This program is free software: You can redistribute it and/or modify it under the terms of the
+ * Mozilla Public License 2.0 as published by the Mozilla under the Mozilla Foundation.
+ *
+ * This program is distributed in the hope that it will be useful, but provided on an "as is" basis,
+ * without warranty of any kind, either expressed, implied, or statutory, including,
+ * without limitation, warranties that the Covered Software is free of defects, merchantable,
+ * fit for a particular purpose or non-infringing. See the MPL 2.0 license for more details.
+ *
+ * For a full copy of the license in its entirety, please visit <https://www.mozilla.org/en-US/MPL/2.0/>
+ */
+
 // noinspection JSVoidFunctionReturnValueUsed
 
+// noinspection JSVoidFunctionReturnValueUsed
+// noinspection JSVoidFunctionReturnValueUsed
+// noinspection JSVoidFunctionReturnValueUsed
 import { HawkClient } from '../../src/index'
-import { alertConfig, authInfo, config } from './testData'
+import { alertConfig, authInfo, config, updateInfo } from './testData'
 import { instance, mock, spy, when } from 'ts-mockito'
 import RequestService from '../../src/RequestService'
 import { AuthService } from '../../src/AuthService'
@@ -98,6 +114,84 @@ describe('HawkClient', () => {
 
         // Because a meterId was supplied, we can also update utility-specific alerts
         await hawkClient.updateAlertSettings(alertConfig, '12345')
+    })
+
+    test('getUserProfileSettings', async () => {
+        await hawkClient.getUserProfileSettings()
+
+        await hawkClient.getUserProfileSettings(authInfo.body.activeUser?.attributes?.accountIdArray[0])
+    })
+
+    test('changeUserProfileSettings', async () => {
+        await hawkClient.changeUserProfileSettings('cellPhone', updateInfo)
+
+        await hawkClient.changeUserProfileSettings('cellPhone', updateInfo, authInfo.body.activeUser?.attributes?.accountIdArray[0])
+    })
+
+    test('registerAccount', async () => {
+        await hawkClient.registerAccounts({
+            accountTag1: '',
+            accountTag2: '',
+            accountTag3: '',
+            accountNumber: '123456',
+            accountName: 'BOB, BILLY & BRENDA',
+            serviceAddress: {
+                address: '123 Main St',
+                city: 'New York',
+                state: 'NY',
+                zip: '10001',
+            },
+        })
+    })
+
+    test('registerAccount', async () => {
+        await hawkClient.removeAccount({
+            accountNumber: '123456',
+            accountName: 'BOB, BILLY & BRENDA',
+            serviceAddress: {
+                address: '123 Main St',
+                city: 'New York',
+                state: 'NY',
+                zip: '10001',
+            },
+        })
+    })
+
+    test('exportDataToCsv', async () => {
+        const date = new Date()
+
+        await hawkClient.exportDataToCsv({
+            accountNumber: '123456',
+            districtName: config.districtName,
+            firstTime: `${date.setDate(date.getDate() - 5)}`,
+            lastTime: `${date}`,
+            interval: '1 hour',
+        })
+    })
+
+    test('getExportedData', async () => {
+        await hawkClient.getExportedData(config.username, "Reports", "test.csv", "C:\\File Path\\Test")
+
+        await hawkClient.getExportedData(config.username, "Reports", "test.csv", "C:\\File Path\\Test", true)
+    })
+
+    test('getExportedData', async () => {
+        await hawkClient.getExportedData(config.username, "Reports", "test.csv", "C:\\File Path\\Test")
+
+        await hawkClient.getExportedData(config.username, "Reports", "test.csv", "C:\\File Path\\Test", true)
+    })
+
+    test('changePassword', async () => {
+        await hawkClient.changePassword('newPassword')
+
+        // If the second param is passed, we should receive an error if they don't match
+        expect(async () => await hawkClient.changePassword('newPassword', 'n3wPa$$w0rd')).toThrow()
+    })
+
+    test('getReports', async () => {
+        await hawkClient.getReports()
+
+        await hawkClient.getReports(1, 0, 50)
     })
 
 

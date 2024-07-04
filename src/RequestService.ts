@@ -19,10 +19,14 @@ import {
     AlertsNotesResponse,
     AlertsResponse,
     AlertTypes,
+    DataExportOptions,
+    DataExportResponse,
     GetAccountsResponse,
     GetMetersResponse,
+    GetReportsResponse,
     HawkAuthResponse,
     HawkConfig,
+    PasswordChangeResponse,
     RegisterAccountsResponse,
     RemoveAccountRequest,
     RequireAtLeastOne,
@@ -35,6 +39,7 @@ import {
 import { AxiosInstance, AxiosRequestConfig } from 'axios'
 import { AuthService } from './AuthService'
 import { convertToFriendlyConfig, convertToUsableConfig } from './AlertHelper'
+import { writeFile } from 'fs/promises'
 
 class RequestService {
 
@@ -360,7 +365,7 @@ class RequestService {
             accountId = this._authService.getAuthInfo().body.activeUser?.attributes.accountIdArray[0]
         }
 
-        const data = await this.getUserProfileSettings(accountId);
+        const data = await this.getUserProfileSettings(accountId)
         const updatedInfo = Object.assign({}, data.users, updateInfo)
         updatedInfo.contactPreference = { [contactPreference]: true }
 
@@ -368,7 +373,7 @@ class RequestService {
             const response = await this._instance.put<AccountSettingsResponse>(`/users/${accountId}`, updatedInfo, {
                 params: {
                     '_dc': Date.now(),
-                    'notify': 1
+                    'notify': 1,
                 },
             }).catch((error: unknown) => {
                 throw new Error(`An error occurred while updating your account: ${error as string}`)
@@ -385,7 +390,7 @@ class RequestService {
 
         const response = await this._instance.post<AccountSettingsResponse>(`/registerAccounts/`, account, {
             params: {
-                'add': true
+                'add': true,
             },
         })
 
@@ -397,44 +402,129 @@ class RequestService {
 
         const response = await this._instance.post<AccountSettingsResponse>(`/registerAccounts/`, account, {
             params: {
-                'remove': true
+                'remove': true,
             },
         })
 
         return response.data
     }
 
-    async exportDataToCsv() {
+    async exportDataToCsv(exportOptions: DataExportOptions): Promise<DataExportResponse> {
         if (this.checkIfAuthNeeded()) await this._authService.authenticate(this._config.username, this._config.password, this._instance)
 
-        return Promise.resolve(undefined)
-    }
-
-    async getExportedData() {
-        if (this.checkIfAuthNeeded()) await this._authService.authenticate(this._config.username, this._config.password, this._instance)
-
-        return Promise.resolve(undefined)
-    }
-
-    async changePassword(newPassword: string, confirmPassword?: string) {
-        if (this.checkIfAuthNeeded()) await this._authService.authenticate(this._config.username, this._config.password, this._instance)
-
-        if (confirmPassword && newPassword !== confirmPassword)
-            throw new Error("Passwords do not match!")
-
-        const response = await this._instance.post<AccountSettingsResponse>(`/registerAccounts/`, {
-            oldPassword: this._config.password,
-            newPassword1: newPassword,
-            newPassword2: newPassword
-        })
+        const response = await this._instance.post<DataExportResponse>(`/timeseries/export`, exportOptions)
 
         return response.data
     }
 
-    async getReports() {
+    async getExportedData(username: string, type: string, filename: string, fileSaveLocation?: string, display?: boolean): Promise<boolean | string> {
         if (this.checkIfAuthNeeded()) await this._authService.authenticate(this._config.username, this._config.password, this._instance)
 
-        return Promise.resolve(undefined)
+        // If we just want the raw text, set display to true. This also allows developers to handle file saving logic on their own if they want the raw text to save or pre-process later
+        if (display) {
+            const response = await this._instance.get<string>(`/download`, {
+                params: {
+                    district: this._config.districtName,
+                    username: username,
+                    type: type,
+                    filename: filename,
+                    display: true
+                }
+            })
+
+            return response.data
+        }
+
+        let addTrailingSlash = false;
+
+        // Check if fileSaveLocation was passed and the last character doesn't include a '/' or '\'. If so, make sure we add it to the filepath later
+        if (fileSaveLocation && !['/', "\\"].includes(fileSaveLocation.charAt(fileSaveLocation.length - 1))) {
+            addTrailingSlash = true
+        }
+
+        // We're running in Node, not the browser. Utilize Axios
+        if (typeof window === 'undefined') {
+            try {
+                // This endpoint returns a content-type of text/csv, so we know it's okay to cast it to string
+                const response = await this._instance.get<string>(`/download`, {
+                    params: {
+                        district: this._config.districtName,
+                        username: username,
+                        type: type,
+                        filename: filename,
+                    },
+                    responseType: 'arraybuffer',
+                })
+
+                const fileData = Buffer.from(response.data, 'binary')
+                if (fileSaveLocation) {
+                    // Windows uses \ by default, but doesn't complain about /. You can even mix and match \ and /. Neat!
+                    await writeFile(fileSaveLocation + (addTrailingSlash ? '/' : '') + filename + '.csv', fileData)
+                } else {
+                    await writeFile(process.cwd() + '/report.csv', fileData)
+                }
+
+                return true;
+
+            } catch (err: unknown) {
+                throw new Error(`An error occurred while downloading and/or saving the report: ${err as string}`)
+            }
+        } else {
+            // We're in the browser. Utilize fetch
+            await fetch('https://' + this._config.districtName + '.' + this._config.platform + '.us/download?' + new URLSearchParams({
+                district: this._config.districtName,
+                username: username,
+                type: type,
+                filename: filename,
+            }).toString()).then(response => response.blob()).then(blob => {
+                const url = window.URL.createObjectURL(blob)
+                const a = document.createElement('a')
+                a.href = url
+                a.download = filename
+                document.body.appendChild(a)
+                a.click()
+                window.URL.revokeObjectURL(url)
+            }).catch((err: unknown) => {
+                throw new Error(`An error occurred while downloading and/or saving the report: ${err as string}`)
+            })
+
+            return true;
+        }
+    }
+
+    async changePassword(newPassword: string, confirmPassword?: string): Promise<PasswordChangeResponse> {
+        if (this.checkIfAuthNeeded()) await this._authService.authenticate(this._config.username, this._config.password, this._instance)
+
+        if (confirmPassword && newPassword != confirmPassword)
+            throw new Error('Passwords do not match!')
+
+        const response = await this._instance.post<PasswordChangeResponse>(`/changepassword`, {
+            oldPassword: this._config.password,
+            newPassword1: newPassword,
+            newPassword2: newPassword,
+        })
+
+        // Update the password in config and refresh the authentication. I'm not sure if the session token expires, but it's
+        // a good idea to do this anyway
+        this._config.password = newPassword;
+        await this._authService.authenticate(this._config.username, this._config.password, this._instance)
+
+        return response.data
+    }
+
+    async getReports(page = 1, start = 0, limit = 25): Promise<GetReportsResponse> {
+        if (this.checkIfAuthNeeded()) await this._authService.authenticate(this._config.username, this._config.password, this._instance)
+        const response = await this._instance.get<GetReportsResponse>(`/reports`, {
+            params: {
+                '_dc': Date.now(),
+                districtName: this._config.districtName,
+                page: page,
+                start: start,
+                limit: limit
+            },
+        })
+
+        return response.data
     }
 }
 

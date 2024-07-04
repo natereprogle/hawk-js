@@ -1,14 +1,29 @@
+/*
+ * Copyright (c) TerrorByte 2024.
+ * This program is free software: You can redistribute it and/or modify it under the terms of the
+ * Mozilla Public License 2.0 as published by the Mozilla under the Mozilla Foundation.
+ *
+ * This program is distributed in the hope that it will be useful, but provided on an "as is" basis,
+ * without warranty of any kind, either expressed, implied, or statutory, including,
+ * without limitation, warranties that the Covered Software is free of defects, merchantable,
+ * fit for a particular purpose or non-infringing. See the MPL 2.0 license for more details.
+ *
+ * For a full copy of the license in its entirety, please visit <https://www.mozilla.org/en-US/MPL/2.0/>
+ */
+
 // noinspection ES6PreferShortImport
 import {
     AccountThresholdAlertSettings,
+    AccountUpdateConfig,
     GetAccountsResponse,
     GetMetersResponse,
     HawkAuthResponse,
     HawkConfig,
     MeterContinuousThresholdAlertSettings,
     MeterThresholdAlertSettings,
+    RequireAtLeastOne,
     ThresholdAlertSettingsConfig,
-} from '../../src/types'
+} from '../../src/types' // This is to allow partials within partials. Regular partials only work with "top level" properties within an object.
 
 // This is to allow partials within partials. Regular partials only work with "top level" properties within an object.
 // If there are other objects within the partial, those objects but contain their full definitions.
@@ -378,6 +393,25 @@ const friendlyConfig: ThresholdAlertSettingsConfig = {
     },
 }
 
+const updateInfo: RequireAtLeastOne<AccountUpdateConfig, 'cellPhone' | 'homePhone' | 'workPhone'> = {
+    homePhone: {
+        areaCode: '555',
+        prefix: '123',
+        'suffix': '4567'
+    },
+    mailingAddress: {
+        address: '123 Main St',
+        city: 'New York',
+        state: 'NY',
+        zip: '10001',
+    },
+    name: {
+        'first': 'Billy',
+        'last': 'Bob',
+    },
+    emailAddress: 'billy.bob@gmail.com'
+}
+
 function toISO8601WithTimezone(date: Date) {
     const pad = (num: number) => String(num).padStart(2, '0')
 
@@ -407,5 +441,6 @@ export {
     meterThresholdConfig,
     meterContinuousThresholdConfig,
     friendlyConfig,
+    updateInfo,
     toISO8601WithTimezone,
 }

@@ -1,13 +1,13 @@
 /*
- * Copyright (c) TerrorByte 2024.
- * This program is free software: You can redistribute it and/or modify it under the terms of the
+ * Copyright (c) TerrorByte 2024. 
+ * This program is free software: You can redistribute it and/or modify it under the terms of the 
  * Mozilla Public License 2.0 as published by the Mozilla under the Mozilla Foundation.
- *
- * This program is distributed in the hope that it will be useful, but provided on an "as is" basis,
- * without warranty of any kind, either expressed, implied, or statutory, including,
- * without limitation, warranties that the Covered Software is free of defects, merchantable,
+ *                                                                                                  
+ * This program is distributed in the hope that it will be useful, but provided on an "as is" basis, 
+ * without warranty of any kind, either expressed, implied, or statutory, including, 
+ * without limitation, warranties that the Covered Software is free of defects, merchantable, 
  * fit for a particular purpose or non-infringing. See the MPL 2.0 license for more details.
- *
+ *                                                                                                  
  * For a full copy of the license in its entirety, please visit <https://www.mozilla.org/en-US/MPL/2.0/>
  */
 
@@ -21,6 +21,7 @@ import {
     AlertsNotesResponse,
     AlertsResponse,
     AlertTypes,
+    DataExportOptions,
     GetAccountsResponse,
     GetMetersResponse,
     HawkAuthResponse,
@@ -280,12 +281,32 @@ export class HawkClient {
         return this._requestService.removeAccount(account)
     }
 
-    public async exportDataToCsv() {
-        return this._requestService.exportDataToCsv()
+    /**
+     * Requests an export of data for the specified time range and interval. Optionally provide an accountNumber to get just that data
+     * The firstTime and lastTime strings within the DataExportOptions are simply ISO8601 UTC strings. You can craft these using the Date() object in JS
+     * This method does not download the file, as the endpoint does not return file data, it just returns the file name of the data that was exported. You must call {@link getExportedData} after
+     *      to retrieve your data
+     *
+     * @param exportSettings The settings you'd like to utilize for specifying the data exported
+     */
+    public async exportDataToCsv(exportSettings: DataExportOptions) {
+        return this._requestService.exportDataToCsv(exportSettings)
     }
 
-    public async getExportedData() {
-        return this._requestService.getExportedData()
+    /**
+     * Saves a previous export to a file. You must have requested the export with {@link exportDataToCsv} prior
+     *
+     * @param username The username of the user to export data for, usually your email
+     * @param type The type of file to export. As of right now, I believe the only acceptable type is "Reports"
+     * @param filename The name of the file you want to save to. Leave the extension alone, it will append .csv to it automatically
+     * @param fileSaveLocation The path of the location to save to. You should add a trailing slash to the directory, but you don't have to. hawk-js will attempt to add one for you if forgotten.
+     *      This can also be omitted if you want to just download it to the process's current working directory, or if you're running in a browser (The browser will handle the download)
+     * @param display If you simply want the data in text form, set this to true. hawk-js will return you the raw text instead of downloading the file
+     *
+     * @returns A true or false value depending on whether the Download was successful
+     */
+    public async getExportedData(username: string, type: string, filename: string, fileSaveLocation?: string, display?: boolean) {
+        return this._requestService.getExportedData(username, type, filename, fileSaveLocation, display)
     }
 
     /**
@@ -298,14 +319,21 @@ export class HawkClient {
      * you provide the `confirmPassword` parameter, and it's not the same as `newPassword`
      *
      * @param newPassword The new password to set on your account
-     * @param confirmPassword An optional parameter that allows you to provide your password a second time to guarantee they're the same and you didn't accidentally make a typo during input
+     * @param confirmPassword An optional parameter that allows you to provide your password a second time to guarantee they're the same, and you didn't accidentally make a typo during input
      * @throws Error Thrown when `confirmPassword` is provided but does not match `newPassword`
      */
     public async changePassword(newPassword: string, confirmPassword?: string) {
         return this._requestService.changePassword(newPassword, confirmPassword)
     }
 
-    public async getReports() {
-        return this._requestService.getReports()
+    /**
+     * Gets a list of all previous reports that were exported. This endpoint does not export any files, you will need to call {@link getExportedData} to actually retrieve them
+     *
+     * @param page The optional page if more than `limit` values were returned, defaults to 1
+     * @param start The optional start value, defaults to 0
+     * @param limit The optional limit value, defaults to 25
+     */
+    public async getReports(page?: number, start?: number, limit?: number) {
+        return this._requestService.getReports(page, start, limit)
     }
 }
