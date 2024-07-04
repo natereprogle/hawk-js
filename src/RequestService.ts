@@ -1,12 +1,35 @@
+/*
+ * Copyright (c) TerrorByte 2024. 
+ * This program is free software: You can redistribute it and/or modify it under the terms of the 
+ * Mozilla Public License 2.0 as published by the Mozilla under the Mozilla Foundation.
+ *                                                                                                  
+ * This program is distributed in the hope that it will be useful, but provided on an "as is" basis, 
+ * without warranty of any kind, either expressed, implied, or statutory, including, 
+ * without limitation, warranties that the Covered Software is free of defects, merchantable, 
+ * fit for a particular purpose or non-infringing. See the MPL 2.0 license for more details.
+ *                                                                                                  
+ * For a full copy of the license in its entirety, please visit <https://www.mozilla.org/en-US/MPL/2.0/>
+ */
+
 import {
+    AccountSettingsResponse,
+    AccountUpdateConfig,
+    AddAccountRequest,
     AlertSeveritiesResponse,
     AlertsNotesResponse,
     AlertsResponse,
     AlertTypes,
+    DataExportOptions,
+    DataExportResponse,
     GetAccountsResponse,
     GetMetersResponse,
+    GetReportsResponse,
     HawkAuthResponse,
     HawkConfig,
+    PasswordChangeResponse,
+    RegisterAccountsResponse,
+    RemoveAccountRequest,
+    RequireAtLeastOne,
     SortType,
     ThresholdAlertSettingsConfig,
     TimeseriesMetrics,
@@ -16,6 +39,7 @@ import {
 import { AxiosInstance, AxiosRequestConfig } from 'axios'
 import { AuthService } from './AuthService'
 import { convertToFriendlyConfig, convertToUsableConfig } from './AlertHelper'
+import { writeFile } from 'fs/promises'
 
 class RequestService {
 
@@ -206,10 +230,14 @@ class RequestService {
         return response.data
     }
 
-    async getCurrentAlertSettings(): Promise<ThresholdAlertSettingsConfig> {
+    async getCurrentAlertSettings(accountId?: string): Promise<ThresholdAlertSettingsConfig> {
         if (this.checkIfAuthNeeded()) await this._authService.authenticate(this._config.username, this._config.password, this._instance)
 
-        const accountId = this._authService.getAuthInfo().body.activeUser?.attributes.accountIdArray[0]
+        // If one wasn't provided we'll try to retrieve it from the accountIdArray in the AuthInfo body
+        if (!accountId) {
+            accountId = this._authService.getAuthInfo().body.activeUser?.attributes.accountIdArray[0]
+        }
+
         if (accountId) {
             const meters = await this._instance.get<GetMetersResponse>('/meters', {
                 params: {
@@ -251,7 +279,7 @@ class RequestService {
 
             return convertToFriendlyConfig(accounts.data, meters.data)
         } else {
-            throw new Error('Failed to get current account settings, an accountId could not be retrieved from previous auth requests')
+            throw new Error('Failed to get current alerting settings, an accountId could not be retrieved from previous auth requests nor was one wasn\'t provided')
         }
     }
 
@@ -277,6 +305,9 @@ class RequestService {
                 '_dc': Date.now(),
                 setFields: accountThresholdConfig,
             },
+            headers: {
+                'Cookie': this._authService.getAuthInfo().sessionCookie,
+            },
         })
 
         if (meterId) {
@@ -287,6 +318,9 @@ class RequestService {
                     '_dc': Date.now(),
                     setFields: meterThresholdConfig,
                 },
+                headers: {
+                    'Cookie': this._authService.getAuthInfo().sessionCookie,
+                },
             })
 
             const meterContinuousResponse: GetMetersResponse = await this._instance.put(`/meters/${meterId}`, {
@@ -295,6 +329,9 @@ class RequestService {
                 params: {
                     '_dc': Date.now(),
                     setFields: meterContinuousThresholdConfig,
+                },
+                headers: {
+                    'Cookie': this._authService.getAuthInfo().sessionCookie,
                 },
             })
 
@@ -306,6 +343,240 @@ class RequestService {
 
     async refreshSession(): Promise<HawkAuthResponse> {
         return await this._authService.authenticate(this._config.username, this._config.password, this._instance)
+    }
+
+    async getUserProfileSettings(accountId?: string): Promise<AccountSettingsResponse> {
+        if (this.checkIfAuthNeeded()) await this._authService.authenticate(this._config.username, this._config.password, this._instance)
+
+        // If one wasn't provided we'll try to retrieve it from the accountIdArray in the AuthInfo body
+        if (!accountId) {
+            accountId = this._authService.getAuthInfo().body.activeUser?.attributes.accountIdArray[0]
+        }
+
+        if (accountId) {
+            const response = await this._instance.get<AccountSettingsResponse>(`/users/${accountId}`, {
+                params: {
+                    '_dc': Date.now(),
+                },
+                headers: {
+                    'Cookie': this._authService.getAuthInfo().sessionCookie,
+                },
+            })
+
+            return response.data
+        } else {
+            throw new Error('Failed to get current account settings, an accountId could not be retrieved from previous auth requests nor was one wasn\'t provided')
+        }
+    }
+
+    async changeUserProfileSettings(contactPreference: 'cellPhone' | 'homePhone' | 'email' | 'workPhone' | 'doNotContact' | 'text', updateInfo: RequireAtLeastOne<AccountUpdateConfig, 'cellPhone' | 'homePhone' | 'workPhone'>, accountId?: string): Promise<AccountSettingsResponse> {
+        if (this.checkIfAuthNeeded()) await this._authService.authenticate(this._config.username, this._config.password, this._instance)
+
+        // If one wasn't provided we'll try to retrieve it from the accountIdArray in the AuthInfo body
+        if (!accountId) {
+            accountId = this._authService.getAuthInfo().body.activeUser?.attributes.accountIdArray[0]
+        }
+
+        const data = await this.getUserProfileSettings(accountId)
+        const updatedInfo = Object.assign({}, data.users, updateInfo)
+        updatedInfo.contactPreference = { [contactPreference]: true }
+
+        if (accountId) {
+            const response = await this._instance.put<AccountSettingsResponse>(`/users/${accountId}`, updatedInfo, {
+                params: {
+                    '_dc': Date.now(),
+                    'notify': 1,
+                },
+                headers: {
+                    'Cookie': this._authService.getAuthInfo().sessionCookie,
+                },
+            }).catch((error: unknown) => {
+                throw new Error(`An error occurred while updating your account: ${error as string}`)
+            })
+
+            return response.data
+        } else {
+            throw new Error('Failed to get current account settings, an accountId could not be retrieved from previous auth requests nor was one wasn\'t provided')
+        }
+    }
+
+    async registerAccounts(account: AddAccountRequest): Promise<RegisterAccountsResponse> {
+        if (this.checkIfAuthNeeded()) await this._authService.authenticate(this._config.username, this._config.password, this._instance)
+
+        const response = await this._instance.post<AccountSettingsResponse>(`/registerAccounts/`, account, {
+            params: {
+                'add': true,
+            },
+            headers: {
+                'Cookie': this._authService.getAuthInfo().sessionCookie,
+            },
+        })
+
+        return response.data
+    }
+
+    async removeAccount(account: RemoveAccountRequest): Promise<RegisterAccountsResponse> {
+        if (this.checkIfAuthNeeded()) await this._authService.authenticate(this._config.username, this._config.password, this._instance)
+
+        const response = await this._instance.post<AccountSettingsResponse>(`/registerAccounts/`, account, {
+            params: {
+                'remove': true,
+            },
+            headers: {
+                'Cookie': this._authService.getAuthInfo().sessionCookie,
+            },
+        })
+
+        return response.data
+    }
+
+    async exportDataToCsv(exportOptions: DataExportOptions): Promise<DataExportResponse> {
+        if (this.checkIfAuthNeeded()) await this._authService.authenticate(this._config.username, this._config.password, this._instance)
+
+        const params = new URLSearchParams()
+        for (const [key, value] of Object.entries(exportOptions)) {
+            if (value !== undefined) {
+                params.append(key, String(value))
+            }
+        }
+
+        const response = await this._instance.post<DataExportResponse>(`/timeseries/export`, params, {
+            headers: {
+                ...this._instance.defaults.headers.common,
+                'Content-Type': 'application/x-www-form-urlencoded',
+                'Cookie': this._authService.getAuthInfo().sessionCookie,
+            },
+        })
+
+        return response.data
+    }
+
+    async getExportedData(username: string, type: string, filename: string, fileSaveLocation?: string, display?: boolean): Promise<boolean | string> {
+        if (this.checkIfAuthNeeded()) await this._authService.authenticate(this._config.username, this._config.password, this._instance)
+
+        // If we just want the raw text, set display to true. This also allows developers to handle file saving logic on their own if they want the raw text to save or pre-process later
+        if (display) {
+            const response = await this._instance.get<string>(`/download`, {
+                params: {
+                    district: this._config.districtName,
+                    username: username,
+                    type: type,
+                    filename: filename,
+                    display: true,
+                },
+                headers: {
+                    'Cookie': this._authService.getAuthInfo().sessionCookie,
+                },
+            })
+
+            return response.data
+        }
+
+        let addTrailingSlash = false
+
+        // Check if fileSaveLocation was passed and the last character doesn't include a '/' or '\'. If so, make sure we add it to the filepath later
+        if (fileSaveLocation && !['/', '\\'].includes(fileSaveLocation.charAt(fileSaveLocation.length - 1))) {
+            addTrailingSlash = true
+        }
+
+        // We're running in Node, not the browser. Utilize Axios
+        if (typeof window === 'undefined') {
+            try {
+                // This endpoint returns a content-type of text/csv, so we know it's okay to cast it to string
+                const response = await this._instance.get<string>(`/download`, {
+                    params: {
+                        district: this._config.districtName,
+                        username: username,
+                        type: type,
+                        filename: filename,
+                    },
+                    headers: {
+                        'Cookie': this._authService.getAuthInfo().sessionCookie,
+                    },
+                    responseType: 'arraybuffer',
+                })
+
+                const fileData = Buffer.from(response.data, 'binary')
+                if (fileSaveLocation) {
+                    // Windows uses \ by default, but doesn't complain about /. You can even mix and match \ and /. Neat!
+                    await writeFile(fileSaveLocation + (addTrailingSlash ? '/' : '') + filename + '.csv', fileData)
+                } else {
+                    await writeFile(process.cwd() + `/${filename}`, fileData)
+                }
+
+                return true
+
+            } catch (err: unknown) {
+                throw new Error(`An error occurred while downloading and/or saving the report: ${err as string}`)
+            }
+        } else {
+            // We're in the browser. Utilize fetch
+            await fetch('https://' + this._config.districtName + '.' + this._config.platform + '.us/download?' + new URLSearchParams({
+                district: this._config.districtName,
+                username: username,
+                type: type,
+                filename: filename,
+            }).toString(), {
+                headers: {
+                    'Cookie': this._authService.getAuthInfo().sessionCookie,
+                },
+            }).then(response => response.blob()).then(blob => {
+                const url = window.URL.createObjectURL(blob)
+                const a = document.createElement('a')
+                a.href = url
+                a.download = filename
+                document.body.appendChild(a)
+                a.click()
+                window.URL.revokeObjectURL(url)
+            }).catch((err: unknown) => {
+                throw new Error(`An error occurred while downloading and/or saving the report: ${err as string}`)
+            })
+
+            return true
+        }
+    }
+
+    async changePassword(newPassword: string, confirmPassword?: string): Promise<PasswordChangeResponse> {
+        if (this.checkIfAuthNeeded()) await this._authService.authenticate(this._config.username, this._config.password, this._instance)
+
+        if (confirmPassword && newPassword !== confirmPassword) {
+            throw new Error('Passwords do not match!')
+        }
+
+        const response = await this._instance.post<PasswordChangeResponse>(`/changepassword`, {
+            oldPassword: this._config.password,
+            newPassword1: newPassword,
+            newPassword2: newPassword,
+        }, {
+            headers: {
+                'Cookie': this._authService.getAuthInfo().sessionCookie,
+            },
+        })
+
+        // Update the password in config and refresh the authentication. I'm not sure if the session token expires, but it's
+        // a good idea to do this anyway
+        this._config.password = newPassword
+        await this._authService.authenticate(this._config.username, this._config.password, this._instance)
+
+        return response.data
+    }
+
+    async getReports(page = 1, start = 0, limit = 25): Promise<GetReportsResponse> {
+        if (this.checkIfAuthNeeded()) await this._authService.authenticate(this._config.username, this._config.password, this._instance)
+        const response = await this._instance.get<GetReportsResponse>(`/reports`, {
+            params: {
+                '_dc': Date.now(),
+                districtName: this._config.districtName,
+                page: page,
+                start: start,
+                limit: limit,
+            },
+            headers: {
+                'Cookie': this._authService.getAuthInfo().sessionCookie,
+            },
+        })
+
+        return response.data
     }
 }
 

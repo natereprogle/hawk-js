@@ -1,13 +1,13 @@
 /*
- * Copyright (c) TerrorByte 2024.
- * This program is free software: You can redistribute it and/or modify it under the terms of the
+ * Copyright (c) TerrorByte 2024. 
+ * This program is free software: You can redistribute it and/or modify it under the terms of the 
  * Mozilla Public License 2.0 as published by the Mozilla under the Mozilla Foundation.
- *
- * This program is distributed in the hope that it will be useful, but provided on an "as is" basis,
- * without warranty of any kind, either expressed, implied, or statutory, including,
- * without limitation, warranties that the Covered Software is free of defects, merchantable,
+ *                                                                                                  
+ * This program is distributed in the hope that it will be useful, but provided on an "as is" basis, 
+ * without warranty of any kind, either expressed, implied, or statutory, including, 
+ * without limitation, warranties that the Covered Software is free of defects, merchantable, 
  * fit for a particular purpose or non-infringing. See the MPL 2.0 license for more details.
- *
+ *                                                                                                  
  * For a full copy of the license in its entirety, please visit <https://www.mozilla.org/en-US/MPL/2.0/>
  */
 
@@ -15,14 +15,19 @@
 // This causes a warning when removed that the import can be shorter but, if it is shorter, then it will throw a warning due to circular references
 // noinspection ES6PreferShortImport
 import {
+    AccountUpdateConfig,
+    AddAccountRequest,
     AlertSeveritiesResponse,
     AlertsNotesResponse,
     AlertsResponse,
     AlertTypes,
+    DataExportOptions,
     GetAccountsResponse,
     GetMetersResponse,
     HawkAuthResponse,
     HawkConfig,
+    RemoveAccountRequest,
+    RequireAtLeastOne,
     SortType,
     ThresholdAlertSettingsConfig,
     TimeseriesMetrics,
@@ -42,7 +47,7 @@ import { AuthService } from './AuthService'
  * If you have access to Water or Natural Gas through Utility/AquaHawk, please open an issue so we can work with you and add support.
  */
 export class HawkClient {
-    constructor(private requestService: RequestService) {
+    constructor(private _requestService: RequestService) {
     }
 
     /**
@@ -66,7 +71,7 @@ export class HawkClient {
      * @throws {Error} An error is thrown if authentication hasn't happened yet
      */
     public getSessionInformation(): HawkAuthResponse {
-        return this.requestService.getSessionInformation()
+        return this._requestService.getSessionInformation()
     }
 
     /**
@@ -76,7 +81,7 @@ export class HawkClient {
      * @returns {Promise<HawkAuthResponse>} The new session information
      */
     public async forceSessionRefresh(): Promise<HawkAuthResponse> {
-        if (this.requestService.checkIfAuthNeeded()) await this.requestService.refreshSession()
+        if (this._requestService.checkIfAuthNeeded()) await this._requestService.refreshSession()
         return this.getSessionInformation()
     }
 
@@ -85,7 +90,7 @@ export class HawkClient {
      * @returns {Promise<number>} The token's expiration time in Epoch (milliseconds)
      */
     public async getTokenExpirationTime(): Promise<number> {
-        if (this.requestService.checkIfAuthNeeded()) await this.requestService.refreshSession()
+        if (this._requestService.checkIfAuthNeeded()) await this._requestService.refreshSession()
 
         const cookieParts: string[] = this.getSessionInformation().sessionCookie.split(';')
         const dateString = cookieParts[2]?.split('=')[1]
@@ -122,7 +127,7 @@ export class HawkClient {
             temperature: true,
             rainfall: true,
         }): Promise<TimeseriesResponse> {
-        return this.requestService.getTimeseriesData(accountNumber, startTime, endTime, interval, extraStartTime, extraEndTime, metrics)
+        return this._requestService.getTimeseriesData(accountNumber, startTime, endTime, interval, extraStartTime, extraEndTime, metrics)
     }
 
     /**
@@ -137,7 +142,7 @@ export class HawkClient {
      * @returns {Promise<GetAccountsResponse>}
      */
     public async getAccounts(sort: SortType = 'alertSeverityRank', secondarySort: SortType = 'lastActiveTime', dir: 'asc' | 'desc' = 'desc', secondaryDir: 'asc' | 'desc' = 'desc', page = 1, start = 0, limit = 100): Promise<GetAccountsResponse> {
-        return this.requestService.getAccounts(sort, secondarySort, dir, secondaryDir, page, start, limit)
+        return this._requestService.getAccounts(sort, secondarySort, dir, secondaryDir, page, start, limit)
     }
 
     /**
@@ -148,7 +153,7 @@ export class HawkClient {
      * @returns {Promise<AlertTypes>}
      */
     public async getAlertTypes(page = 1, start = 0, limit = 25): Promise<AlertTypes> {
-        return this.requestService.getAlertTypes(page, start, limit)
+        return this._requestService.getAlertTypes(page, start, limit)
     }
 
     /**
@@ -162,7 +167,7 @@ export class HawkClient {
      * @returns {Promise<AlertsResponse>}
      */
     public async getAlerts(accountNumber: string, sort: SortType = 'updatedTime', dir: 'asc' | 'desc' = 'desc', page = 1, start = 0, limit = 100): Promise<AlertsResponse> {
-        return this.requestService.getAlerts(accountNumber, sort, dir, page, start, limit)
+        return this._requestService.getAlerts(accountNumber, sort, dir, page, start, limit)
     }
 
     /**
@@ -176,7 +181,7 @@ export class HawkClient {
      * @returns {Promise<AlertsNotesResponse>}
      */
     public async getAlertNotes(accountNumber: string, sort: SortType = 'savedTime', dir: 'asc' | 'desc' = 'desc', page = 1, start = 0, limit = 100): Promise<AlertsNotesResponse> {
-        return this.requestService.getAlertNotes(accountNumber, sort, dir, page, start, limit)
+        return this._requestService.getAlertNotes(accountNumber, sort, dir, page, start, limit)
     }
 
     /**
@@ -187,7 +192,7 @@ export class HawkClient {
      * @returns {Promise<AlertSeveritiesResponse>}
      */
     public async getAlertSeverities(page = 1, start = 0, limit = 25): Promise<AlertSeveritiesResponse> {
-        return this.requestService.getAlertSeverities(page, start, limit)
+        return this._requestService.getAlertSeverities(page, start, limit)
     }
 
     /**
@@ -202,7 +207,7 @@ export class HawkClient {
      * @param limit Limit. Defaults to 100
      */
     public async getMeterByAccountID(accountId: string, sort: SortType = 'alertSeverityRank', secondarySort: SortType = 'lastActiveTime', dir: 'asc' | 'desc' = 'desc', secondaryDir: 'asc' | 'desc' = 'desc', page = 1, start = 0, limit = 100) {
-        return this.requestService.getMeterByAccountID(accountId, sort, secondarySort, dir, secondaryDir, page, start, limit)
+        return this._requestService.getMeterByAccountID(accountId, sort, secondarySort, dir, secondaryDir, page, start, limit)
     }
 
     /**
@@ -215,16 +220,18 @@ export class HawkClient {
      * @param limit Limit. Defaults to 100
      * @returns {Promise<GetMetersResponse>}
      */
-    public async getMeterByAccountNumber(accountNumber: string, sort: SortType = 'lastActiveTime', dir: 'asc' | 'desc', page: number, start: number, limit: number): Promise<GetMetersResponse> {
-        return this.requestService.getMeterByAccountNumber(accountNumber, sort, dir, page, start, limit)
+    public async getMeterByAccountNumber(accountNumber: string, sort: SortType = 'lastActiveTime', dir: 'asc' | 'desc' = 'desc', page = 1, start = 0, limit = 100): Promise<GetMetersResponse> {
+        return this._requestService.getMeterByAccountNumber(accountNumber, sort, dir, page, start, limit)
     }
 
     /**
      * Get current account and meter alerting settings. See {@link updateAlertSettings} to update these settings
+     * @param accountId An optional userId to pass in to specify which accountId you want to query alert settings for.
+     *      If none is specified, hawk-js will default to the first one returned in the AuthBody
      * @returns {Promise<ThresholdAlertSettingsConfig>}
      */
-    public async getCurrentAlertSettings(): Promise<ThresholdAlertSettingsConfig> {
-        return this.requestService.getCurrentAlertSettings()
+    public async getCurrentAlertSettings(accountId?: string): Promise<ThresholdAlertSettingsConfig> {
+        return this._requestService.getCurrentAlertSettings(accountId)
     }
 
     /**
@@ -236,6 +243,97 @@ export class HawkClient {
      * @returns {Promise<UpdateAlertSettingsResponse>}
      */
     public async updateAlertSettings(config: ThresholdAlertSettingsConfig, meterId?: string): Promise<UpdateAlertSettingsResponse> {
-        return this.requestService.updateAlertSettings(config, meterId)
+        return this._requestService.updateAlertSettings(config, meterId)
+    }
+
+    /**
+     * Retrieve your account settings. If you have multiple account Ids, you may provide one to retrieve specifically those settings
+     * @param accountId An optional accountId for the account you want to retrieve settings from
+     */
+    public async getUserProfileSettings(accountId?: string) {
+        return this._requestService.getUserProfileSettings(accountId)
+    }
+
+    /**
+     * Updates settings for your account. An optional accountId parameter is provided for you to specify which account to update if you have more than one
+     * @param contactPreference The method of contact you'd like UtilityHawk/AquaHawk to use to reach you
+     * @param updateInfo All the information you want updated on your account. You must provide at least one of workPhone, cellPhone, or homePhone, as UtilityHawk/AquaHawk requires at least one on your account
+     * @param accountId An optional accountId to specify the account you want to update
+     */
+    public async changeUserProfileSettings(contactPreference: 'cellPhone' | 'homePhone' | 'email' | 'workPhone' | 'doNotContact' | 'text', updateInfo: RequireAtLeastOne<AccountUpdateConfig, 'cellPhone' | 'homePhone' | 'workPhone'>, accountId?: string) {
+        return this._requestService.changeUserProfileSettings(contactPreference, updateInfo, accountId);
+    }
+
+    /**
+     * Adds a utility account to your UtilityHawk/AquaHawk account.
+     * This endpoint always returns 200 for some godforsaken reason, so be sure to check the success flag for success or failure
+     * @param account The account information to register
+     */
+    public async registerAccounts(account: AddAccountRequest) {
+        return this._requestService.registerAccounts(account)
+    }
+
+    /**
+     * Removes a utility account from your UtilityHawk/AquaHawk account
+     * @param account The account information you want to remove
+     */
+    public async removeAccount(account: RemoveAccountRequest) {
+        return this._requestService.removeAccount(account)
+    }
+
+    /**
+     * Requests an export of data for the specified time range and interval. Optionally provide an accountNumber to get just that data
+     * The firstTime and lastTime strings within the DataExportOptions are simply ISO8601 UTC strings. You can craft these using the Date() object in JS
+     * This method does not download the file, as the endpoint does not return file data, it just returns the file name of the data that was exported. You must call {@link getExportedData} after
+     *      to retrieve your data
+     *
+     * @param exportSettings The settings you'd like to utilize for specifying the data exported
+     */
+    public async exportDataToCsv(exportSettings: DataExportOptions) {
+        return this._requestService.exportDataToCsv(exportSettings)
+    }
+
+    /**
+     * Saves a previous export to a file. You must have requested the export with {@link exportDataToCsv} prior
+     *
+     * @param username The username of the user to export data for, usually your email
+     * @param type The type of file to export. As of right now, I believe the only acceptable type is "Reports"
+     * @param filename The name of the file you want to save to. Leave the extension alone, it will append .csv to it automatically
+     * @param fileSaveLocation The path of the location to save to. You should add a trailing slash to the directory, but you don't have to. hawk-js will attempt to add one for you if forgotten.
+     *      This can also be omitted if you want to just download it to the process's current working directory, or if you're running in a browser (The browser will handle the download)
+     * @param display If you simply want the data in text form, set this to true. hawk-js will return you the raw text instead of downloading the file
+     *
+     * @returns A true or false value depending on whether the Download was successful
+     */
+    public async getExportedData(username: string, type: string, filename: string, fileSaveLocation?: string, display?: boolean) {
+        return this._requestService.getExportedData(username, type, filename, fileSaveLocation, display)
+    }
+
+    /**
+     * Changes your account password. This assumes you're already authenticated to UtilityHawk/AquaHawk, meaning you don't have to confirm your old password.
+     * A second parameter, `confirmPassword`, is available if you want to ensure you're entering the same password twice (Say, for user input)
+     *
+     * This method will automatically update the password in the config for hawk-js. Be sure to provide the new password the next time you create a hawk-js client object.
+     *
+     * This endpoint *can* return a `412 Precondition Failed`, but since hawk-js handles checks internally you will never receive that error. You only have to worry about error handling if
+     * you provide the `confirmPassword` parameter, and it's not the same as `newPassword`
+     *
+     * @param newPassword The new password to set on your account
+     * @param confirmPassword An optional parameter that allows you to provide your password a second time to guarantee they're the same, and you didn't accidentally make a typo during input
+     * @throws Error Thrown when `confirmPassword` is provided but does not match `newPassword`
+     */
+    public async changePassword(newPassword: string, confirmPassword?: string) {
+        return this._requestService.changePassword(newPassword, confirmPassword)
+    }
+
+    /**
+     * Gets a list of all previous reports that were exported. This endpoint does not export any files, you will need to call {@link getExportedData} to actually retrieve them
+     *
+     * @param page The optional page if more than `limit` values were returned, defaults to 1
+     * @param start The optional start value, defaults to 0
+     * @param limit The optional limit value, defaults to 25
+     */
+    public async getReports(page?: number, start?: number, limit?: number) {
+        return this._requestService.getReports(page, start, limit)
     }
 }

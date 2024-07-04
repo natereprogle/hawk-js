@@ -1,17 +1,17 @@
-// noinspection DuplicatedCode
-
 /*
- * Copyright (c) TerrorByte 2024.
- * This program is free software: You can redistribute it and/or modify it under the terms of the
+ * Copyright (c) TerrorByte 2024. 
+ * This program is free software: You can redistribute it and/or modify it under the terms of the 
  * Mozilla Public License 2.0 as published by the Mozilla under the Mozilla Foundation.
- *
- * This program is distributed in the hope that it will be useful, but provided on an "as is" basis,
- * without warranty of any kind, either expressed, implied, or statutory, including,
- * without limitation, warranties that the Covered Software is free of defects, merchantable,
+ *                                                                                                  
+ * This program is distributed in the hope that it will be useful, but provided on an "as is" basis, 
+ * without warranty of any kind, either expressed, implied, or statutory, including, 
+ * without limitation, warranties that the Covered Software is free of defects, merchantable, 
  * fit for a particular purpose or non-infringing. See the MPL 2.0 license for more details.
- *
+ *                                                                                                  
  * For a full copy of the license in its entirety, please visit <https://www.mozilla.org/en-US/MPL/2.0/>
  */
+
+// noinspection DuplicatedCode
 
 interface HawkAuthResponseBody {
     success: boolean;
@@ -2009,6 +2009,53 @@ interface GetMetersResponse {
     }[]
 }
 
+interface AccountSettingsResponse {
+    success: boolean
+    message: string
+    total: number
+    users: {
+        __v: number
+        _id: string
+        alias: string
+        attributes: {
+            accountIdArray: string[]
+        }
+        emailAddress: string
+        enabled: boolean
+        firstLoginTime: string
+        lastLoginTime: string
+        name: {
+            first: string
+            last: string
+        }
+        setupTime: string
+        updatedTime: string
+        username: string
+        contactPreference: Record<string, boolean>
+        mailingAddress: {
+            address: string
+            city: string
+            state: string
+            zip: string
+        }
+        workPhone?: {
+            areaCode: string
+            prefix: string
+            suffix: string
+        }
+        homePhone?: {
+            areaCode: string
+            prefix: string
+            suffix: string
+        }
+        cellPhone?: {
+            areaCode: string
+            prefix: string
+            suffix: string
+        }
+    }
+}
+
 interface AccountThresholdAlertSettings {
     'alertSettings.billAmount.threshold.billing period alert over': boolean
     'alertSettings.billAmount.threshold.billing period alert projected': boolean
@@ -2141,25 +2188,162 @@ interface UpdateAlertSettingsResponse {
     meterContinuousResponse?: GetMetersResponse;
 }
 
+interface AccountUpdateConfig {
+    homePhone?: {
+        areaCode: string
+        prefix: string
+        suffix: string
+    }
+    cellPhone?: {
+        areaCode: string
+        prefix: string
+        suffix: string
+    }
+    workPhone?: {
+        areaCode: string
+        prefix: string
+        suffix: string
+        ext: string
+    }
+    alias?: string
+    mailingAddress: {
+        address: string
+        city: string
+        state: string
+        zip: string
+    }
+    name: {
+        first: string
+        last: string
+    }
+    emailAddress: string
+}
+
+interface RemoveAccountRequest {
+    accountNumber: string
+    accountName: string
+    serviceAddress: {
+        address: string
+        city: string
+        state: string
+        zip: string
+    }
+}
+
+interface AddAccountRequest {
+    accountTag1: string
+    accountTag2: string
+    accountTag3: string
+    accountNumber: string
+    accountName: string
+    serviceAddress: {
+        address: string
+        city: string
+        state: string
+        zip: string
+    }
+}
+
+interface RegisterAccountsResponse {
+    success: boolean
+    message: string
+    messageLocale?: string
+    errors?: {
+        accountNumber: string
+        accountTag1: string
+        accountTag2: string
+        accountTag3: string
+    }
+    errorsLocale?: {
+        accountNumber: string
+        accountTag1: string
+        accountTag2: string
+        accountTag3: string
+    }
+}
+
+interface PasswordChangeResponse {
+    success: boolean,
+    message: string,
+    returnCode: number
+}
+
+interface DataExportOptions {
+    firstTime: string
+    lastTime: string
+    interval: '1 hour' | '1 day' | '1 month'
+    districtName: string
+    accountNumber?: string
+}
+
+interface DataExportResponse {
+    success: boolean
+    message: string
+    district: string
+    username: string
+    filename: string
+    type: string
+}
+
+interface GetReportsResponse {
+    success: boolean
+    message: string
+    total: number
+    list: {
+        fileName: string
+        fileType: string
+        fileGroup: string
+        fileGroupTitle?: string
+        fileGroupSubtitle?: string
+        fileGroupInformation?: string
+        displayName: string
+        download: {
+            district: string
+            type: string
+            username: string
+            filename: string
+        }
+        _id: number
+        fileExt?: string
+        fileTime?: string
+        fileSize?: number
+    }[]
+}
 
 type SortType = 'alertSeverityRank' | 'lastActiveTime' | 'updatedTime' | 'savedTime'
 
+type RequireAtLeastOne<T, Keys extends keyof T = keyof T> =
+    Pick<T, Exclude<keyof T, Keys>>
+    & {
+        [K in Keys]-?: Required<Pick<T, K>> & Partial<Pick<T, Exclude<Keys, K>>>
+    }[Keys]
+
 export {
+    AccountSettingsResponse,
+    AccountThresholdAlertSettings,
+    AccountUpdateConfig,
+    AddAccountRequest,
+    AlertSeveritiesResponse,
+    AlertTypes,
+    AlertsNotesResponse,
+    AlertsResponse,
+    DataExportOptions,
+    DataExportResponse,
+    GetAccountsResponse,
+    GetMetersResponse,
     HawkAuthResponse,
     HawkAuthResponseBody,
     HawkConfig,
+    MeterContinuousThresholdAlertSettings,
+    MeterThresholdAlertSettings,
+    PasswordChangeResponse,
+    RegisterAccountsResponse,
+    RemoveAccountRequest,
+    RequireAtLeastOne,
+    SortType,
+    ThresholdAlertSettingsConfig,
     TimeseriesMetrics,
     TimeseriesResponse,
-    AlertTypes,
-    AlertsResponse,
-    AlertsNotesResponse,
-    AlertSeveritiesResponse,
-    SortType,
-    GetMetersResponse,
-    AccountThresholdAlertSettings,
-    MeterThresholdAlertSettings,
-    MeterContinuousThresholdAlertSettings,
-    ThresholdAlertSettingsConfig,
-    GetAccountsResponse,
     UpdateAlertSettingsResponse,
+    GetReportsResponse,
 }
