@@ -1,5 +1,19 @@
 # @natereprogle/hawk-js
 
+## 0.1.0
+
+### Minor Changes
+
+- 13ad30a: Add 10 new methods for 7 new endpoints:
+
+  - `GET /users/{accountId}`
+  - `PUT /users/{accountId}`
+  - `POST /registerAccounts`
+  - `POST /export`
+  - `GET /download`
+  - `POST /changepassword`
+  - `GET /reports`
+
 ## 0.0.3
 
 ### Patch Changes
