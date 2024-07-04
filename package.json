@@ -1,6 +1,6 @@
 {
   "name": "@natereprogle/hawk-js",
-  "version": "0.0.3",
+  "version": "0.1.0",
   "description": "A utility for interacting with the UtilityHawk/AquaHawk API, enabling you to query your electric/water/gas usage whenever, wherever, programmatically.",
   "main": "dist/index.js",
   "module": "dist/index.mjs",
