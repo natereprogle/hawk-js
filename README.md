@@ -1,3 +1,8 @@
+# Archived as of 2026-02-19
+This was a fun little experiment for me, and I learned quite a bit in regards to "reverse-engineering" public APIs. However, I never actually used this project, nor did I intend to in the first place. Due to a lack of maintenance, many dependencies are outdated which have been found to contain vulnerabilities. AquaHawk/UtilityHawk was never intended to have a public-facing API, and use of this library circumvents that. 
+
+If anyone wants to continue to maintain this, feel free to fork it!
+
 # hawk-js 🦅
 
 hawk-js is an <u>**unofficial**</u> JavaScript library for interacting with [UtilityHawk](https://utilityhawk.com/)
